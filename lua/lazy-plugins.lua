@@ -1,7 +1,9 @@
 local plugins = {
 	require('plugins.neo-tree'),
 	require('plugins.which-key'),
-	require('plugins.colorschemes')
+	require('plugins.colorschemes'),
+	require('plugins.telescope'),
+	require('plugins.blink')
 }
 
 local opts = {
