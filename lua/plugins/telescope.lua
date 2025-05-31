@@ -4,7 +4,6 @@
 -- you do for a plugin at the top level, you can do for a dependency.
 --
 -- Use the `dependencies` key to specify the dependencies of a particular plugin
-
 return {
   { -- Fuzzy Finder (files, lsp, etc)
     'nvim-telescope/telescope.nvim',
@@ -27,7 +26,7 @@ return {
       { 'nvim-telescope/telescope-ui-select.nvim' },
 
       -- Useful for getting pretty icons, but requires a Nerd Font.
-      { 'nvim-tree/nvim-web-devicons', enabled = vim.g.have_nerd_font },
+      { 'nvim-tree/nvim-web-devicons',            enabled = vim.g.have_nerd_font },
     },
     config = function()
       -- Telescope is a fuzzy finder that comes with a lot of different things that
@@ -55,11 +54,31 @@ return {
         -- You can put your default mappings / updates / etc. in here
         --  All the info you're looking for is in `:help telescope.setup()`
         --
-        -- defaults = {
-        --   mappings = {
-        --     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
-        --   },
-        -- },
+        defaults = {
+          -- This section defines default mappings for ALL Telescope pickers
+          mappings = {
+            i = { -- Insert mode mappings
+              -- Disable default C-n/C-p if you don't want them at all
+              -- ["<C-n>"] = false,
+              -- ["<C-p>"] = false,
+
+              -- Map C-j and C-k to navigate next/previous item
+              -- actions.move_selection_next and actions.move_selection_previous are the core Telescope actions
+              ["<C-j>"] = require('telescope.actions').move_selection_next,
+              ["<C-k>"] = require('telescope.actions').move_selection_previous,
+
+              -- You can also map regular j/k if you prefer (though C-j/C-k is common for completion/pickers)
+              -- This might conflict with other insert mode mappings if you don't have good rules
+              -- ["j"] = require('telescope.actions').move_selection_next,
+              -- ["k"] = require('telescope.actions').move_selection_previous,
+            },
+            n = { -- Normal mode mappings
+              -- Telescope pickers also work in normal mode
+              ["j"] = require('telescope.actions').move_selection_next,
+              ["k"] = require('telescope.actions').move_selection_previous,
+            },
+          },
+        },
         -- pickers = {}
         extensions = {
           ['ui-select'] = {
@@ -86,7 +105,7 @@ return {
       vim.keymap.set('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
 
       -- Slightly advanced example of overriding default behavior and theme
-      vim.keymap.set('n', '<leader>/', function()
+      vim.keymap.set('n', '<leader>s/', function()
         -- You can pass additional configuration to Telescope to change the theme, layout, etc.
         builtin.current_buffer_fuzzy_find(require('telescope.themes').get_dropdown {
           winblend = 10,
@@ -111,4 +130,3 @@ return {
   },
 }
 -- vim: ts=2 sts=2 sw=2 et
-

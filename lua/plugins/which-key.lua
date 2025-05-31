@@ -15,4 +15,7 @@ return {
       desc = "Buffer Local Keymaps (which-key)",
     },
   },
+  plugins = {
+    presets = false
+  }
 }
