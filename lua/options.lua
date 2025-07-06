@@ -1,10 +1,7 @@
 vim.g.have_nerd_fonts = true
-vim.opt.foldenable = flase
+vim.opt.foldenable = false
 vim.opt.foldmethod = 'manual'
 vim.opt.foldlevelstart = 99
-
-vim.opt.wrap = true 
-
 
 vim.opt.wildmode = 'list:longest'		--" Decent wildmenui in completion, when there is more than one match, list all matches, and only complete to longest common match
 
@@ -29,7 +26,7 @@ vim.opt.smartindent = true                      -- make indenting smarter again
 vim.opt.splitbelow = true                       -- force all horizontal splits to go below current window
 vim.opt.splitright = true                       -- force all vertical splits to go to the right of current window
 vim.opt.swapfile = false                        -- creates a swapfile
--- vim.opt.termguicolors = true                    -- set term gui colors (most terminals support this)
+vim.opt.termguicolors = true                    -- set term gui colors (most terminals support this)
 vim.opt.timeoutlen = 1000                       -- time to wait for a mapped sequence to complete (in milliseconds)
 vim.opt.undofile = true                         -- enable persistent undo
 vim.opt.updatetime = 300                        -- faster completion (4000ms default)

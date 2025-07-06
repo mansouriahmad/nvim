@@ -27,9 +27,16 @@ return {
       mason_lspconfig.setup({
         ensure_installed = {
           'lua_ls',
-          'omnisharp'
+          'omnisharp',
+          'rust_analyzer'
         },
       })
+
+      -- Install codelldb for better Rust debugging
+      local mason_registry = require('mason-registry')
+      if not mason_registry.is_installed('codelldb') then
+        mason_registry.get('codelldb'):install()
+      end
 
 
       local my_mapper = require("utils.keymap")
@@ -74,49 +81,8 @@ return {
           })
         end, vim.tbl_extend('force', common_buf_opts, { desc = 'Quick Fix (preferred action)' }))
 
-        -- Keymaps for navigating floating windows like code actions or completion menus
-        -- This is more robust as it uses vim.fn.pumvisible() to check if a popup menu is open
-        -- and simulates the default navigation keys.
-        -- This should be set in Normal and Insert mode.
-
-        -- For Normal mode when a popup is visible (e.g., after <leader>ca)
-        vim.keymap.set('n', 'j', function()
-          if vim.fn.pumvisible() == 1 then
-            vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<C-n>', true, true, true), 'n', false)
-          else
-            vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('j', true, true, true), 'n', false)
-          end
-        end, common_buf_opts)
-
-        vim.keymap.set('n', 'k', function()
-          if vim.fn.pumvisible() == 1 then
-            vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<C-p>', true, true, true), 'n', false)
-          else
-            vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('k', true, true, true), 'n', false)
-          end
-        end, common_buf_opts)
-
-        -- For Insert mode (often relevant for completion, but can apply to other popups)
-        -- cmp.mapping.select_next_item() and cmp.mapping.select_prev_item() are already doing this
-        -- for cmp. If you want j/k to always work *within* any floating window, including code actions,
-        -- regardless of cmp, then these insert mode mappings are also useful.
-        vim.keymap.set('i', '<C-j>', function()
-          if vim.fn.pumvisible() == 1 then
-            vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<C-n>', true, true, true), 'i', false)
-          else
-            vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<C-j>', true, true, true), 'i', false)
-          end
-        end, common_buf_opts)
-
-        vim.keymap.set('i', '<C-k>', function()
-          if vim.fn.pumvisible() == 1 then
-            vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<C-p>', true, true, true), 'i', false)
-          else
-            vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<C-k>', true, true, true), 'i', false)
-          end
-        end, common_buf_opts)
-
-        -- If you want normal 'j'/'k' in insert mode when popup is not visible:
+        -- Note: Removed problematic j/k keybindings that were causing recursive loops
+        -- The cmp configuration below already handles popup navigation properly
       end
 
       -- Diagnostic configuration
@@ -170,10 +136,6 @@ return {
 
       lspconfig.rust_analyzer.setup({
         on_attach = on_attach,
-        -- REMOVE THIS LINE: cmd = { require('mason-lspconfig').get_mason_bin_path('rust-analyzer') },
-        -- REMOVE THIS LINE IF PRESENT: cmd = { "rust-analyzer" },
-        -- REMOVE THIS LINE IF PRESENT: server_cmd = { vim.fn.stdpath('data') .. '/mason/bin/rust-analyzer' },
-
         settings = {
           ['rust-analyzer'] = {
             checkOnSave = {
@@ -186,6 +148,48 @@ return {
               bindingModeHints = { enable = true },
               closureCaptureHints = { enable = true },
               maxLength = 25,
+            },
+            -- Enhanced debugging support
+            cargo = {
+              loadOutDirsFromCheck = true,
+              runBuildScripts = true,
+              buildScripts = {
+                enable = true,
+              },
+            },
+            procMacro = {
+              enable = true,
+            },
+            lens = {
+              enable = true,
+              run = true,
+              debug = true,
+              implementations = true,
+              references = true,
+              references_adt = true,
+              references_trait = true,
+              references_enum_variant = true,
+              references_module = true,
+              references_macro = true,
+              references_primitive = true,
+              references_associated_type = true,
+              references_associated_const = true,
+              references_associated_fn = true,
+              references_associated_macro = true,
+              references_associated_type_impl = true,
+              references_associated_const_impl = true,
+              references_associated_fn_impl = true,
+              references_associated_macro_impl = true,
+            },
+            hover = {
+              actions = {
+                enable = true,
+                references = true,
+                implementations = true,
+                run = true,
+                debug = true,
+                goto_type_def = true,
+              },
             },
           },
         },
@@ -212,14 +216,4 @@ return {
     'numToStr/Comment.nvim',
     opts = {},   -- This is where you would put any configuration options
   },
-  {
-    'nvimdev/lspsaga.nvim',
-    config = function()
-      require('lspsaga').setup({})
-    end,
-    dependencies = {
-      'nvim-treesitter/nvim-treesitter',   -- optional
-      'nvim-tree/nvim-web-devicons',       -- optional
-    }
-  }
 }

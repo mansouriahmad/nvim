@@ -74,8 +74,9 @@ return {
             },
             n = { -- Normal mode mappings
               -- Telescope pickers also work in normal mode
-              ["j"] = require('telescope.actions').move_selection_next,
-              ["k"] = require('telescope.actions').move_selection_previous,
+              -- Using C-j/C-k instead of j/k to avoid conflicts with other plugins
+              ["<C-j>"] = require('telescope.actions').move_selection_next,
+              ["<C-k>"] = require('telescope.actions').move_selection_previous,
             },
           },
         },

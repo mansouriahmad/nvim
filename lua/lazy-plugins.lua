@@ -1,5 +1,5 @@
 local plugins = {
-	require('plugins.neo-tree'),
+	require('plugins.nvim-tree'),
 	require('plugins.which-key'),
 	require('plugins.colorschemes'),
 	require('plugins.telescope'),
@@ -7,7 +7,8 @@ local plugins = {
 	require('plugins.git'),
 	require('plugins.lsp'),
 	require('plugins.trouble'), -- This is fancy UI for showing the errors
---	require('plugins.treesitter'),
+	require('plugins.treesitter'),
+	require('plugins.debug'),
   require('plugins.noice'),
   require('plugins.toggleterm'),
   require('plugins.bufferline')

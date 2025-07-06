@@ -7,7 +7,7 @@ require 'lazy-plugins'
 
 vim.cmd.colorscheme("tokyonight-night")
 
-vim.bakcground = dark
+vim.background = "dark"
 -- Set colors for regular line numbers and current line number
 vim.api.nvim_set_hl(0, "LineNr", { fg = "#A0A0A0" })       -- Regular line numbers (gray)
 vim.api.nvim_set_hl(0, "CursorLineNr", { fg = "#FFFF00" }) -- Current line number (yellow)

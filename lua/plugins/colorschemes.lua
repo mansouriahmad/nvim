@@ -10,22 +10,22 @@ return {
       })
     end,
   },
-  {
-    "uloco/bluloco.nvim",
-    dependencies = { "rktjmp/lush.nvim" }, -- <- this is the missing one
-    lazy = false,                          -- or true if you want lazy loading
-    priority = 1000,                       -- optional: control loading order if needed
-    config = function()
-      require("bluloco").setup({
-        style = "auto", -- "auto" | "dark" | "light"
-        transparent = false,
-        italics = false,
-        terminal = vim.fn.has("gui_running") == 1,
-        guicursor = true,
-        rainbow_headings = false,
-      })
-    end,
-  },
+  -- {
+  --   "uloco/bluloco.nvim",
+  --   dependencies = { "rktjmp/lush.nvim" },
+  --   lazy = false,
+  --   priority = 1000,
+  --   config = function()
+  --     require("bluloco").setup({
+  --       style = "auto", -- "auto" | "dark" | "light"
+  --       transparent = false,
+  --       italics = false,
+  --       terminal = vim.fn.has("gui_running") == 1,
+  --       guicursor = true,
+  --       rainbow_headings = false,
+  --     })
+  --   end,
+  -- },
   { -- You can easily change to a different colorscheme.
     -- Change the name of the colorscheme plugin below, and then
     -- change the command in the config to whatever the name of that colorscheme is.
