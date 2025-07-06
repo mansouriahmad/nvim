@@ -87,6 +87,63 @@ return {
         dapui.close()
       end
 
+      -- Breakpoint persistence
+      local breakpoints_file = vim.fn.stdpath("data") .. "/breakpoints.json"
+      
+      -- Function to save breakpoints to file
+      local function save_breakpoints()
+        local breakpoints = dap.breakpoints()
+        local data = {}
+        
+        for _, bp in pairs(breakpoints) do
+          table.insert(data, {
+            line = bp.line,
+            condition = bp.condition,
+            hitCondition = bp.hitCondition,
+            logMessage = bp.logMessage,
+            path = bp.path
+          })
+        end
+        
+        local file = io.open(breakpoints_file, "w")
+        if file then
+          file:write(vim.json.encode(data))
+          file:close()
+        end
+      end
+      
+      -- Function to load breakpoints from file
+      local function load_breakpoints()
+        local file = io.open(breakpoints_file, "r")
+        if file then
+          local content = file:read("*all")
+          file:close()
+          
+          local ok, data = pcall(vim.json.decode, content)
+          if ok and data then
+            for _, bp_data in ipairs(data) do
+              -- Only set breakpoint if file exists
+              if vim.fn.filereadable(bp_data.path) == 1 then
+                dap.set_breakpoint(bp_data.condition, bp_data.hitCondition, bp_data.logMessage, bp_data.path, bp_data.line)
+              end
+            end
+          end
+        end
+      end
+      
+      -- Save breakpoints when they change
+      dap.listeners.after.set_breakpoints["breakpoint_persistence"] = function()
+        save_breakpoints()
+      end
+      
+      -- Load breakpoints on startup
+      vim.api.nvim_create_autocmd("VimEnter", {
+        callback = function()
+          -- Small delay to ensure DAP is ready
+          vim.defer_fn(load_breakpoints, 1000)
+        end
+      })
+
       -- Rust debugging configuration for macOS
       -- Use codelldb for better Rust support
       dap.adapters.codelldb = {
@@ -103,6 +160,13 @@ return {
         type = 'executable',
         command = '/usr/bin/lldb', -- macOS system LLDB
         name = "lldb"
+      }
+
+      -- Python debugging adapter
+      dap.adapters.python = {
+        type = 'executable',
+        command = 'python3',
+        args = { '-m', 'debugpy.adapter' },
       }
 
       -- Function to get the best available debug adapter
@@ -262,6 +326,90 @@ return {
         },
       }
 
+      -- Python debugging configurations
+      dap.configurations.python = {
+        {
+          name = "Python: Current File",
+          type = "python",
+          request = "launch",
+          program = "${file}",
+          console = "integratedTerminal",
+          justMyCode = true,
+        },
+        {
+          name = "Python: Current File (External Terminal)",
+          type = "python",
+          request = "launch",
+          program = "${file}",
+          console = "externalTerminal",
+          justMyCode = true,
+        },
+        {
+          name = "Python: Module",
+          type = "python",
+          request = "launch",
+          module = "enter-your-module-name",
+          console = "integratedTerminal",
+          justMyCode = true,
+        },
+        {
+          name = "Python: Attach",
+          type = "python",
+          request = "attach",
+          connect = {
+            port = 5678,
+            host = "127.0.0.1",
+          },
+          pathMappings = {
+            {
+              localRoot = "${workspaceFolder}",
+              remoteRoot = ".",
+            },
+          },
+        },
+        {
+          name = "Python: Django",
+          type = "python",
+          request = "launch",
+          program = "${workspaceFolder}/manage.py",
+          args = { "runserver" },
+          django = true,
+          console = "integratedTerminal",
+          justMyCode = true,
+        },
+        {
+          name = "Python: Flask",
+          type = "python",
+          request = "launch",
+          module = "flask",
+          env = {
+            FLASK_APP = "${workspaceFolder}/app.py",
+            FLASK_DEBUG = "1",
+          },
+          args = { "run", "--no-debugger", "--no-reload" },
+          console = "integratedTerminal",
+          justMyCode = true,
+        },
+        {
+          name = "Python: FastAPI",
+          type = "python",
+          request = "launch",
+          module = "uvicorn",
+          args = { "main:app", "--reload", "--port", "8000" },
+          console = "integratedTerminal",
+          justMyCode = true,
+        },
+        {
+          name = "Python: pytest",
+          type = "python",
+          request = "launch",
+          module = "pytest",
+          args = { "-v" },
+          console = "integratedTerminal",
+          justMyCode = false,
+        },
+      }
+
       -- Function to check if codelldb is available
       local function check_codelldb()
         local codelldb_path = vim.fn.stdpath("data") .. "/mason/bin/codelldb"
@@ -353,6 +501,31 @@ return {
       vim.keymap.set('n', '<leader>dl', dap.run_last, { desc = 'Run Last' })
       vim.keymap.set('n', '<leader>du', dapui.toggle, { desc = 'Toggle DAP UI' })
       
+      -- Breakpoint management keymaps
+      vim.keymap.set('n', '<leader>dbl', function()
+        local breakpoints = dap.breakpoints()
+        if #breakpoints == 0 then
+          vim.notify('No breakpoints set', vim.log.levels.INFO)
+        else
+          local msg = string.format('Breakpoints (%d):', #breakpoints)
+          for i, bp in ipairs(breakpoints) do
+            msg = msg .. string.format('\n%d. %s:%d', i, vim.fn.fnamemodify(bp.path, ':t'), bp.line)
+          end
+          vim.notify(msg, vim.log.levels.INFO)
+        end
+      end, { desc = 'List Breakpoints' })
+      
+      vim.keymap.set('n', '<leader>dbc', function()
+        dap.clear_breakpoints()
+        save_breakpoints()
+        vim.notify('All breakpoints cleared', vim.log.levels.INFO)
+      end, { desc = 'Clear All Breakpoints' })
+      
+      vim.keymap.set('n', '<leader>dbr', function()
+        load_breakpoints()
+        vim.notify('Breakpoints restored from file', vim.log.levels.INFO)
+      end, { desc = 'Restore Breakpoints' })
+      
       -- Floating debug controls
       vim.keymap.set('n', '<leader>dC', function()
         dapui.float_element("controls", { enter = true })
@@ -362,11 +535,27 @@ return {
       vim.keymap.set('n', '<leader>dd', build_and_debug, { desc = 'Build and Debug Binary' })
       vim.keymap.set('n', '<leader>dT', build_and_debug_tests, { desc = 'Build and Debug Tests' })
       
-      -- Manual installation command
+      -- Function to install Python debugging dependencies
+      local function install_python_debug_deps()
+        vim.notify('Installing Python debugging dependencies...', vim.log.levels.INFO)
+        local job = vim.fn.jobstart({'pip3', 'install', 'debugpy'}, {
+          on_exit = function(_, code)
+            if code == 0 then
+              vim.notify('Python debugging dependencies installed successfully!', vim.log.levels.INFO)
+            else
+              vim.notify('Failed to install Python debugging dependencies. Try: pip3 install debugpy', vim.log.levels.ERROR)
+            end
+          end
+        })
+      end
+
+      -- Manual installation commands
       vim.keymap.set('n', '<leader>di', function()
         vim.cmd('MasonInstall codelldb')
         vim.notify('Installing codelldb... Please wait and try debugging again.', vim.log.levels.INFO)
       end, { desc = 'Install codelldb' })
+
+      vim.keymap.set('n', '<leader>dip', install_python_debug_deps, { desc = 'Install Python Debug Dependencies' })
     end,
   },
   {

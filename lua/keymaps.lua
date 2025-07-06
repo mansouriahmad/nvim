@@ -11,11 +11,6 @@ vim.keymap.set("n", "<Space>", "<Nop>", opts)
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
--- Debug mapping to see what happens with <leader>d
-vim.keymap.set("n", "<leader>d", function()
-  print("DEBUG: <leader>d was pressed")
-  vim.api.nvim_echo({{"DEBUG: <leader>d was pressed", "WarningMsg"}}, true, {})
-end, { noremap = true, desc = "Debug <leader>d" })
 
 -- Clear highlights on search when pressing <Esc> in normal mode
 --  See `:help hlsearch`

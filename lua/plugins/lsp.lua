@@ -22,21 +22,40 @@ return {
       -- Fidget for LSP progress messages
       require('fidget').setup({})
 
-      -- Mason setup for installing LSP servers
-      mason.setup()
-      mason_lspconfig.setup({
+      -- Mason setup for installing LSP servers (with error handling)
+      local ok, mason_setup_error = pcall(mason.setup)
+      if not ok then
+        vim.notify('Failed to setup Mason: ' .. tostring(mason_setup_error), vim.log.levels.ERROR)
+      end
+      
+      local ok2, mason_lsp_setup_error = pcall(mason_lspconfig.setup, {
         ensure_installed = {
           'lua_ls',
           'omnisharp',
-          'rust_analyzer'
+          'rust_analyzer',
+          'pyright'
         },
+        automatic_installation = true,
       })
-
-      -- Install codelldb for better Rust debugging
-      local mason_registry = require('mason-registry')
-      if not mason_registry.is_installed('codelldb') then
-        mason_registry.get('codelldb'):install()
+      if not ok2 then
+        vim.notify('Failed to setup Mason LSP config: ' .. tostring(mason_lsp_setup_error), vim.log.levels.ERROR)
       end
+
+      -- Install codelldb for better Rust debugging (with error handling)
+      local function install_codelldb()
+        local ok, mason_registry = pcall(require, 'mason-registry')
+        if ok and mason_registry then
+          if not mason_registry.is_installed('codelldb') then
+            mason_registry.get('codelldb'):install()
+          end
+        else
+          -- Fallback: use vim.notify to inform user
+          vim.notify('Mason registry not available. Please install codelldb manually via :MasonInstall codelldb', vim.log.levels.WARN)
+        end
+      end
+      
+      -- Try to install codelldb, but don't fail if it doesn't work
+      pcall(install_codelldb)
 
 
       local my_mapper = require("utils.keymap")
@@ -207,6 +226,29 @@ return {
               checkThirdParty = false,
             },
             telemetry = { enable = false },
+          },
+        },
+      })
+
+      -- Python LSP configuration
+      lspconfig.pyright.setup({
+        on_attach = on_attach,
+        settings = {
+          python = {
+            analysis = {
+              typeCheckingMode = "basic",
+              autoSearchPaths = true,
+              useLibraryCodeForTypes = true,
+              diagnosticMode = "workspace",
+              inlayHints = {
+                functionReturnTypes = true,
+                variableTypes = true,
+                parameterTypes = true,
+              },
+            },
+            linting = {
+              enabled = true,
+            },
           },
         },
       })
