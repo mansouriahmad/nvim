@@ -87,64 +87,158 @@ return {
         dapui.close()
       end
 
-      -- Breakpoint persistence
+      -- Breakpoint persistence (robust, cross-platform, with pending support)
       local breakpoints_file = vim.fn.stdpath("data") .. "/breakpoints.json"
-      
-      -- Function to save breakpoints to file
+      local pending_breakpoints = {}
+
+      -- Save all breakpoints to file
       local function save_breakpoints()
-        local breakpoints = dap.breakpoints()
+        local all_bps = dap.list_breakpoints()
+        if type(all_bps) ~= 'table' then
+          print('[DAP] No breakpoints to save.')
+          return
+        end
         local data = {}
-        
-        for _, bp in pairs(breakpoints) do
-          table.insert(data, {
-            line = bp.line,
-            condition = bp.condition,
-            hitCondition = bp.hitCondition,
-            logMessage = bp.logMessage,
-            path = bp.path
-          })
-        end
-        
-        local file = io.open(breakpoints_file, "w")
-        if file then
-          file:write(vim.json.encode(data))
-          file:close()
-        end
-      end
-      
-      -- Function to load breakpoints from file
-      local function load_breakpoints()
-        local file = io.open(breakpoints_file, "r")
-        if file then
-          local content = file:read("*all")
-          file:close()
-          
-          local ok, data = pcall(vim.json.decode, content)
-          if ok and data then
-            for _, bp_data in ipairs(data) do
-              -- Only set breakpoint if file exists
-              if vim.fn.filereadable(bp_data.path) == 1 then
-                dap.set_breakpoint(bp_data.condition, bp_data.hitCondition, bp_data.logMessage, bp_data.path, bp_data.line)
-              end
+        for buf, bps in pairs(all_bps) do
+          local file = vim.api.nvim_buf_get_name(buf)
+          if type(bps) == 'table' then
+            for _, bp in ipairs(bps) do
+              table.insert(data, {
+                file = file,
+                line = bp.line,
+                condition = bp.condition,
+                logMessage = bp.logMessage,
+                hitCondition = bp.hitCondition,
+              })
             end
           end
         end
+        local f = io.open(breakpoints_file, "w")
+        if f then
+          f:write(vim.json.encode(data))
+          f:close()
+          print("[DAP] Breakpoints saved to " .. breakpoints_file)
+        else
+          print("[DAP] Failed to save breakpoints!")
+        end
       end
-      
-      -- Save breakpoints when they change
-      dap.listeners.after.set_breakpoints["breakpoint_persistence"] = function()
+
+      -- Actually set breakpoints for a file if buffer is loaded
+      local function set_breakpoints_for_file(file, bps)
+        local bufnr = vim.fn.bufnr(file, false)
+        if bufnr ~= -1 and type(bps) == 'table' then
+          for _, bp in ipairs(bps) do
+            dap.set_breakpoint(file, bp.line, bp.condition, bp.logMessage, bp.hitCondition)
+          end
+          return true
+        end
+        return false
+      end
+
+      -- Load breakpoints from file, defer if buffer not loaded
+      local function load_breakpoints()
+        local f = io.open(breakpoints_file, "r")
+        if not f then print("[DAP] No breakpoints file found.") return end
+        local content = f:read("*a")
+        f:close()
+        local ok, data = pcall(vim.json.decode, content)
+        if not ok or type(data) ~= 'table' then print("[DAP] Failed to decode breakpoints file.") return end
+        pending_breakpoints = {}
+        for _, bp in ipairs(data) do
+          if bp.file and bp.line then
+            if not set_breakpoints_for_file(bp.file, {bp}) then
+              -- Buffer not loaded, store for later
+              pending_breakpoints[bp.file] = pending_breakpoints[bp.file] or {}
+              table.insert(pending_breakpoints[bp.file], bp)
+            end
+          end
+        end
+        print("[DAP] Breakpoints loaded (pending for unopened files)")
+      end
+
+      -- On BufReadPost, set any pending breakpoints for that file
+      vim.api.nvim_create_autocmd("BufReadPost", {
+        callback = function(args)
+          local file = vim.api.nvim_buf_get_name(args.buf)
+          if pending_breakpoints[file] then
+            set_breakpoints_for_file(file, pending_breakpoints[file])
+            pending_breakpoints[file] = nil
+            print("[DAP] Restored breakpoints for " .. file)
+          end
+        end
+      })
+
+      -- Clear all breakpoints and save
+      local function clear_breakpoints()
+        dap.clear_breakpoints()
         save_breakpoints()
       end
-      
-      -- Load breakpoints on startup
+
+      -- List all breakpoints
+      local function list_breakpoints()
+        local all_bps = dap.list_breakpoints()
+        if type(all_bps) ~= 'table' then
+          vim.notify("No breakpoints set", vim.log.levels.INFO)
+          return
+        end
+        local msg = {}
+        for buf, bps in pairs(all_bps) do
+          local file = vim.api.nvim_buf_get_name(buf)
+          if type(bps) == 'table' then
+            for _, bp in ipairs(bps) do
+              table.insert(msg, string.format("%s:%d", file, bp.line))
+            end
+          end
+        end
+        if #msg == 0 then
+          vim.notify("No breakpoints set", vim.log.levels.INFO)
+        else
+          vim.notify("Breakpoints:\n" .. table.concat(msg, "\n"), vim.log.levels.INFO)
+        end
+      end
+
+      -- Save breakpoints on set/clear
+      dap.listeners.after.set_breakpoints["persist"] = save_breakpoints
+      dap.listeners.after.clear_breakpoints["persist"] = save_breakpoints
+
+      -- Save breakpoints on exit
+      vim.api.nvim_create_autocmd("VimLeavePre", {
+        callback = save_breakpoints
+      })
+
+      -- Load breakpoints on startup (with delay)
       vim.api.nvim_create_autocmd("VimEnter", {
         callback = function()
-          -- Small delay to ensure DAP is ready
           vim.defer_fn(load_breakpoints, 1000)
         end
       })
 
-      -- Rust debugging configuration for macOS
+      -- Keymaps for manual control
+      vim.keymap.set('n', '<leader>dbs', save_breakpoints, { desc = 'Save Breakpoints' })
+      vim.keymap.set('n', '<leader>dbr', load_breakpoints, { desc = 'Restore Breakpoints' })
+      vim.keymap.set('n', '<leader>dbc', clear_breakpoints, { desc = 'Clear All Breakpoints' })
+      vim.keymap.set('n', '<leader>dbl', list_breakpoints, { desc = 'List Breakpoints' })
+
+      -- Watches: open panel and add watch expression
+      --
+      -- Usage:
+      --   <leader>duw   -- Open DAP UI and focus Watches panel
+      --   <leader>daw   -- Add a watch expression (prompts for input)
+      --
+      -- In the UI, use 'a' to add, 'e' to edit, 'd' to delete watches.
+      vim.keymap.set('n', '<leader>duw', function()
+        require('dapui').open()
+        vim.notify("Use Tab or mouse to focus the Watches panel.", vim.log.levels.INFO)
+      end, { desc = 'Open Watches Panel (DAP UI)' })
+
+      vim.keymap.set('n', '<leader>daw', function()
+        local expr = vim.fn.input('Watch expression: ')
+        if expr and expr ~= '' then
+          require('dap').add_watch(expr)
+        end
+      end, { desc = 'Add DAP Watch Expression' })
+
+      -- Rust debugging configuration (cross-platform)
       -- Use codelldb for better Rust support
       dap.adapters.codelldb = {
         type = 'server',
@@ -155,27 +249,40 @@ return {
         },
       }
       
-      -- Alternative: Use system LLDB on macOS (if codelldb fails)
-      dap.adapters.lldb = {
-        type = 'executable',
-        command = '/usr/bin/lldb', -- macOS system LLDB
-        name = "lldb"
-      }
+      -- Alternative: Use system debuggers (cross-platform fallback)
+      if vim.fn.has('mac') == 1 then
+        -- macOS system LLDB
+        dap.adapters.lldb = {
+          type = 'executable',
+          command = '/usr/bin/lldb',
+          name = "lldb"
+        }
+      elseif vim.fn.has('unix') == 1 then
+        -- Linux GDB (Ubuntu/Debian)
+        dap.adapters.gdb = {
+          type = 'executable',
+          command = 'gdb',
+          args = { '--interpreter=mi' }
+        }
+      end
 
-      -- Python debugging adapter
+      -- Python debugging adapter (cross-platform, FIXED: command must be string)
+      local python_exe = vim.fn.executable('python3') == 1 and 'python3' or 'python'
       dap.adapters.python = {
         type = 'executable',
-        command = 'python3',
+        command = python_exe,
         args = { '-m', 'debugpy.adapter' },
       }
 
-      -- Function to get the best available debug adapter
+      -- Function to get the best available debug adapter (cross-platform)
       local function get_debug_adapter()
         local codelldb_path = vim.fn.stdpath("data") .. "/mason/bin/codelldb"
         if vim.fn.executable(codelldb_path) == 1 then
           return "codelldb"
-        elseif vim.fn.executable('/usr/bin/lldb') == 1 then
+        elseif vim.fn.has('mac') == 1 and vim.fn.executable('/usr/bin/lldb') == 1 then
           return "lldb"
+        elseif vim.fn.has('unix') == 1 and vim.fn.executable('gdb') == 1 then
+          return "gdb"
         else
           return "codelldb" -- default fallback
         end
@@ -188,6 +295,7 @@ return {
         
         -- Check if this is a Rust project
         if vim.fn.filereadable(cargo_toml) == 0 then
+          vim.notify('Not a Rust project (no Cargo.toml found)', vim.log.levels.WARN)
           return nil
         end
         
@@ -201,28 +309,40 @@ return {
         end
         
         if not package_name then
+          vim.notify('Could not find package name in Cargo.toml', vim.log.levels.WARN)
           return nil
         end
         
         -- Check for binary executable (macOS compatible)
         local binary_path = cwd .. '/target/debug/' .. package_name
         if vim.fn.filereadable(binary_path) == 1 then
-          return binary_path
+          if vim.fn.executable(binary_path) == 1 then
+            return binary_path
+          else
+            vim.notify('Binary exists but is not executable: ' .. binary_path, vim.log.levels.WARN)
+          end
         end
         
         -- Check for test executable (macOS compatible)
         local test_path = cwd .. '/target/debug/deps/' .. package_name .. '-*'
         local test_files = vim.fn.glob(test_path, false, true)
         if #test_files > 0 then
-          return test_files[1]
+          for _, test_file in ipairs(test_files) do
+            if vim.fn.executable(test_file) == 1 then
+              return test_file
+            end
+          end
         end
         
         -- Check for release build (macOS common)
         local release_path = cwd .. '/target/release/' .. package_name
         if vim.fn.filereadable(release_path) == 1 then
-          return release_path
+          if vim.fn.executable(release_path) == 1 then
+            return release_path
+          end
         end
         
+        vim.notify('No executable found. Try running: cargo build', vim.log.levels.WARN)
         return nil
       end
 
@@ -233,6 +353,7 @@ return {
         return test_files
       end
 
+      -- Rust debugging configurations (cross-platform)
       dap.configurations.rust = {
         {
           name = "Debug Binary (Auto)",
@@ -244,6 +365,23 @@ return {
               return exe
             else
               -- Fallback to manual input if auto-detection fails
+              return vim.fn.input('Path to executable: ', vim.fn.getcwd() .. '/target/debug/', 'file')
+            end
+          end,
+          cwd = '${workspaceFolder}',
+          stopOnEntry = false,
+          args = {},
+          console = 'integratedTerminal',
+        },
+        {
+          name = "Debug Binary (GDB - Ubuntu)",
+          type = "gdb",
+          request = "launch",
+          program = function()
+            local exe = get_rust_executable()
+            if exe then
+              return exe
+            else
               return vim.fn.input('Path to executable: ', vim.fn.getcwd() .. '/target/debug/', 'file')
             end
           end,
@@ -490,7 +628,13 @@ return {
       end
 
       -- Keymaps for debugging (macOS-friendly)
-      vim.keymap.set('n', '<leader>db', dap.toggle_breakpoint, { desc = 'Toggle Breakpoint' })
+      vim.keymap.set('n', '<leader>db', function()
+        dap.toggle_breakpoint()
+        vim.cmd('redraw!')  -- Force redraw to show breakpoint sign immediately
+        local line = vim.fn.line('.')
+        local file = vim.fn.expand('%:p')
+        vim.notify(string.format('Breakpoint toggled at %s:%d', vim.fn.fnamemodify(file, ':t'), line), vim.log.levels.INFO)
+      end, { desc = 'Toggle Breakpoint' })
       vim.keymap.set('n', '<F5>', dap.continue, { desc = 'Start/Continue Debugging' })
       vim.keymap.set('n', '<F8>', dap.continue, { desc = 'Continue' })
       vim.keymap.set('n', '<F6>', dap.step_into, { desc = 'Step Into' })
@@ -501,61 +645,72 @@ return {
       vim.keymap.set('n', '<leader>dl', dap.run_last, { desc = 'Run Last' })
       vim.keymap.set('n', '<leader>du', dapui.toggle, { desc = 'Toggle DAP UI' })
       
-      -- Breakpoint management keymaps
-      vim.keymap.set('n', '<leader>dbl', function()
-        local breakpoints = dap.breakpoints()
-        if #breakpoints == 0 then
-          vim.notify('No breakpoints set', vim.log.levels.INFO)
-        else
-          local msg = string.format('Breakpoints (%d):', #breakpoints)
-          for i, bp in ipairs(breakpoints) do
-            msg = msg .. string.format('\n%d. %s:%d', i, vim.fn.fnamemodify(bp.path, ':t'), bp.line)
-          end
-          vim.notify(msg, vim.log.levels.INFO)
-        end
-      end, { desc = 'List Breakpoints' })
-      
-      vim.keymap.set('n', '<leader>dbc', function()
-        dap.clear_breakpoints()
-        save_breakpoints()
-        vim.notify('All breakpoints cleared', vim.log.levels.INFO)
-      end, { desc = 'Clear All Breakpoints' })
-      
-      vim.keymap.set('n', '<leader>dbr', function()
-        load_breakpoints()
-        vim.notify('Breakpoints restored from file', vim.log.levels.INFO)
-      end, { desc = 'Restore Breakpoints' })
-      
-      -- Floating debug controls
-      vim.keymap.set('n', '<leader>dC', function()
-        dapui.float_element("controls", { enter = true })
-      end, { desc = 'Show Debug Controls' })
-      
       -- Auto-build and debug keymaps
       vim.keymap.set('n', '<leader>dd', build_and_debug, { desc = 'Build and Debug Binary' })
       vim.keymap.set('n', '<leader>dT', build_and_debug_tests, { desc = 'Build and Debug Tests' })
       
-      -- Function to install Python debugging dependencies
+      -- Function to install Python debugging dependencies (cross-platform)
       local function install_python_debug_deps()
         vim.notify('Installing Python debugging dependencies...', vim.log.levels.INFO)
-        local job = vim.fn.jobstart({'pip3', 'install', 'debugpy'}, {
-          on_exit = function(_, code)
-            if code == 0 then
-              vim.notify('Python debugging dependencies installed successfully!', vim.log.levels.INFO)
-            else
-              vim.notify('Failed to install Python debugging dependencies. Try: pip3 install debugpy', vim.log.levels.ERROR)
-            end
+        
+        -- Try different pip commands based on system
+        local pip_commands = {'pip3', 'pip', 'python3 -m pip', 'python -m pip'}
+        local success = false
+        
+        for _, cmd in ipairs(pip_commands) do
+          if vim.fn.executable(cmd:match('^[%w]+')) == 1 then
+            local job = vim.fn.jobstart({cmd:match('^[%w]+'), 'install', 'debugpy'}, {
+              on_exit = function(_, code)
+                if code == 0 then
+                  vim.notify('Python debugging dependencies installed successfully!', vim.log.levels.INFO)
+                  success = true
+                else
+                  if not success then
+                    vim.notify('Failed to install with ' .. cmd .. '. Trying next method...', vim.log.levels.WARN)
+                  end
+                end
+              end
+            })
+            break
           end
-        })
+        end
+        
+        if not success then
+          vim.notify('Failed to install Python debugging dependencies. Try manually: pip3 install debugpy', vim.log.levels.ERROR)
+        end
       end
 
-      -- Manual installation commands
+      -- Manual installation commands (cross-platform)
       vim.keymap.set('n', '<leader>di', function()
         vim.cmd('MasonInstall codelldb')
         vim.notify('Installing codelldb... Please wait and try debugging again.', vim.log.levels.INFO)
       end, { desc = 'Install codelldb' })
 
       vim.keymap.set('n', '<leader>dip', install_python_debug_deps, { desc = 'Install Python Debug Dependencies' })
+      
+      -- Ubuntu-specific installation commands
+      if vim.fn.has('unix') == 1 and vim.fn.has('mac') == 0 then
+        vim.keymap.set('n', '<leader>dig', function()
+          vim.notify('Installing GDB...', vim.log.levels.INFO)
+          local job = vim.fn.jobstart({'sudo', 'apt-get', 'update'}, {
+            on_exit = function(_, code)
+              if code == 0 then
+                local job2 = vim.fn.jobstart({'sudo', 'apt-get', 'install', '-y', 'gdb'}, {
+                  on_exit = function(_, code2)
+                    if code2 == 0 then
+                      vim.notify('GDB installed successfully!', vim.log.levels.INFO)
+                    else
+                      vim.notify('Failed to install GDB. Try: sudo apt-get install gdb', vim.log.levels.ERROR)
+                    end
+                  end
+                })
+              else
+                vim.notify('Failed to update package list. Try: sudo apt-get update', vim.log.levels.ERROR)
+              end
+            end
+          })
+        end, { desc = 'Install GDB (Ubuntu)' })
+      end
     end,
   },
   {
@@ -569,4 +724,6 @@ return {
       require('dap-go').setup()
     end,
   },
-} 
+}
+
+ 
