@@ -711,6 +711,62 @@ return {
           })
         end, { desc = 'Install GDB (Ubuntu)' })
       end
+
+      -- C# debugging adapter (netcoredbg, robust path detection)
+      local mason_netcoredbg = vim.fn.stdpath('data') .. '/mason/packages/netcoredbg/netcoredbg/netcoredbg'
+      if vim.fn.filereadable(mason_netcoredbg) == 0 then
+        mason_netcoredbg = vim.fn.stdpath('data') .. '/mason/bin/netcoredbg'
+      end
+      dap.adapters.coreclr = {
+        type = 'executable',
+        command = mason_netcoredbg,
+        args = { '--interpreter=vscode' },
+      }
+
+      -- C# debug configurations
+      dap.configurations.cs = {
+        {
+          type = 'coreclr',
+          name = 'Launch - NetCoreDbg',
+          request = 'launch',
+          program = function()
+            return vim.fn.input('Path to dll: ', vim.fn.getcwd() .. '/bin/Debug/', 'file')
+          end,
+        },
+        {
+          type = 'coreclr',
+          name = 'Attach - NetCoreDbg',
+          request = 'attach',
+          processId = function()
+            local output = vim.fn.system('ps -A | grep dotnet')
+            local lines = vim.split(output, '\n')
+            for _, line in ipairs(lines) do
+              local pid = line:match('^%s*(%d+)')
+              if pid then
+                print(line)
+              end
+            end
+            return tonumber(vim.fn.input('Process ID: '))
+          end,
+        },
+      }
+
+      -- Keymap: build and debug C# project
+      vim.keymap.set('n', '<leader>ddc', function()
+        vim.notify('Building C# project (dotnet build)...', vim.log.levels.INFO)
+        local job = vim.fn.jobstart({'dotnet', 'build'}, {
+          on_exit = function(_, code)
+            if code == 0 then
+              vim.notify('Build successful! Starting debugger...', vim.log.levels.INFO)
+              vim.schedule(function()
+                require('dap').continue()
+              end)
+            else
+              vim.notify('Build failed! Check errors and try again.', vim.log.levels.ERROR)
+            end
+          end
+        })
+      end, { desc = 'Build and Debug C# Project' })
     end,
   },
   {

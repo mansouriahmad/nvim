@@ -45,3 +45,13 @@ vim.api.nvim_set_hl(0, "LineNrBelow", { fg = "#888888" })  -- Lines below curren
 --        end)
 --    end,
 --})
+
+local omnisharp_bin = vim.fn.stdpath("data") .. "/mason/packages/omnisharp/omnisharp"
+if vim.fn.executable(omnisharp_bin) == 0 then
+  omnisharp_bin = vim.fn.stdpath("data") .. "/mason/bin/omnisharp"
+end
+
+lspconfig.omnisharp.setup({
+  cmd = { omnisharp_bin, "--languageserver", "--hostPID", tostring(vim.fn.getpid()) },
+  on_attach = on_attach,
+})

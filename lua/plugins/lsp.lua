@@ -252,6 +252,13 @@ return {
           },
         },
       })
+
+      -- C# LSP configuration
+      lspconfig.omnisharp.setup({
+        on_attach = on_attach,
+        -- You can add more settings here if needed
+        -- settings = { ... }
+      })
     end,
   },
   {
