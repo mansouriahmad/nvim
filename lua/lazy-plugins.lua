@@ -11,7 +11,8 @@ local plugins = {
 	require('plugins.debug'),
   require('plugins.noice'),
   require('plugins.toggleterm'),
-  require('plugins.bufferline')
+  require('plugins.bufferline'),
+  require('plugins.autopairs')
 }
 
 local opts = {

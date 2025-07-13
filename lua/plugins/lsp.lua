@@ -210,6 +210,9 @@ return {
                 goto_type_def = true,
               },
             },
+            diagnostics = {
+              disabled = {"unlinked-file"}
+            }
           },
         },
       })
