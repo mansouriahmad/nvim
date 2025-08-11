@@ -16,7 +16,7 @@ local plugins = {
   require('plugins.snacks'),
   require('plugins.qol'),
   require('plugins.flash'),
-  require('plugins.ai'),
+  require('plugins.hlchunk')
 }
 
 local opts = {
