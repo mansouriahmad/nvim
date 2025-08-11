@@ -12,7 +12,11 @@ local plugins = {
   require('plugins.noice'),
   require('plugins.toggleterm'),
   require('plugins.bufferline'),
-  require('plugins.autopairs')
+  require('plugins.autopairs'),
+  require('plugins.snacks'),
+  require('plugins.qol'),
+  require('plugins.flash'),
+  require('plugins.ai'),
 }
 
 local opts = {

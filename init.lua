@@ -5,7 +5,7 @@ require 'lazy-bootstrap'
 
 require 'lazy-plugins'
 
-vim.cmd.colorscheme("tokyonight-night")
+vim.cmd.colorscheme("everforest")
 
 vim.background = "dark"
 -- Set colors for regular line numbers and current line number

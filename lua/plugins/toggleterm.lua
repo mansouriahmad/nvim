@@ -28,6 +28,10 @@ return {
 
     -- Quick exit from terminal to normal mode
     vim.cmd([[tnoremap <Esc> <C-\><C-n>]])
+    vim.cmd([[tnoremap <C-h> <C-\><C-n><C-w>h]])
+    vim.cmd([[tnoremap <C-j> <C-\><C-n><C-w>j]])
+    vim.cmd([[tnoremap <C-k> <C-\><C-n><C-w>k]])
+    vim.cmd([[tnoremap <C-l> <C-\><C-n><C-w>l]])
   end,
 }
 
