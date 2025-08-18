@@ -20,7 +20,11 @@ return {
       local luasnip = require('luasnip')
 
       -- Fidget for LSP progress messages
-      require('fidget').setup({})
+      require('fidget').setup({
+        integration = {
+          nvim_notify = true, -- Integrate with vim.notify
+        },
+      })
 
       -- Mason setup for installing LSP servers (with error handling)
       local ok, mason_setup_error = pcall(mason.setup)
@@ -139,11 +143,35 @@ return {
           ['<C-f>'] = cmp.mapping.scroll_docs(4),
           ['<C-Space>'] = cmp.mapping.complete(),
           ['<C-e>'] = cmp.mapping.abort(),
-          ['<CR>'] = cmp.mapping.confirm({ select = true }),
+          ['<CR>'] = cmp.mapping(function(fallback)
+            if cmp.visible() then
+              cmp.confirm({ select = true })
+            elseif luasnip.expand_or_locally_jumpable() then
+              luasnip.expand_or_locally_jump()
+            else
+              fallback()
+            end
+          end, { 'i', 's' }),
 
           -- Autocomplete navigation with Ctrl+j and Ctrl+k
           ['<C-j>'] = cmp.mapping.select_next_item({ behavior = cmp.SelectBehavior.Insert }),
           ['<C-k>'] = cmp.mapping.select_prev_item({ behavior = cmp.SelectBehavior.Insert }),
+
+          -- Jump to next/previous snippet node (for LuaSnip)
+          ['<Tab>'] = cmp.mapping(function(fallback)
+            if luasnip.expand_or_jumpable() then
+              luasnip.expand_or_jump()
+            else
+              fallback()
+            end
+          end, { 'i', 's' }),
+          ['<S-Tab>'] = cmp.mapping(function(fallback)
+            if luasnip.jumpable(-1) then
+              luasnip.jump(-1)
+            else
+              fallback()
+            end
+          end, { 'i', 's' }),
         }),
         sources = cmp.config.sources({
           { name = 'nvim_lsp' },
@@ -263,9 +291,5 @@ return {
         -- settings = { ... }
       })
     end,
-  },
-  {
-    'numToStr/Comment.nvim',
-    opts = {},   -- This is where you would put any configuration options
   },
 }

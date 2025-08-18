@@ -1,5 +1,4 @@
 local plugins = {
-	require('plugins.nvim-tree'),
 	require('plugins.which-key'),
 	require('plugins.colorschemes'),
 	require('plugins.telescope'),
@@ -16,7 +15,9 @@ local plugins = {
   require('plugins.snacks'),
   require('plugins.qol'),
   require('plugins.flash'),
-  require('plugins.hlchunk')
+  require('plugins.hlchunk'),
+  require('plugins.vim-tmux-navigator'),
+  require('plugins.mini')
 }
 
 local opts = {

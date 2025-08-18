@@ -5,10 +5,29 @@ return {
       'rcarriga/nvim-dap-ui',
       'leoluz/nvim-dap-go',
       'nvim-neotest/nvim-nio',
+      'williamboman/mason.nvim',
+      'theHamsta/nvim-dap-virtual-text',
     },
     config = function()
       local dap = require('dap')
       local dapui = require('dapui')
+
+      require("nvim-dap-virtual-text").setup {
+        -- This just tries to mitigate the chance that I leak tokens here. Probably won't stop it from happening...
+        display_callback = function(variable)
+          local name = string.lower(variable.name)
+          local value = string.lower(variable.value)
+          if name:match "secret" or name:match "api" or value:match "secret" or value:match "api" then
+            return "*****"
+          end
+
+          if #variable.value > 15 then
+            return " " .. string.sub(variable.value, 1, 15) .. "... "
+          end
+
+          return " " .. variable.value
+        end,
+      }
 
       -- Setup DAP UI
       dapui.setup({
@@ -73,17 +92,37 @@ return {
         },
       })
 
+      local elixir_ls_debugger = vim.fn.exepath "elixir-ls-debugger"
+      if elixir_ls_debugger ~= "" then
+        dap.adapters.mix_task = {
+          type = "executable",
+          command = elixir_ls_debugger,
+        }
+
+        dap.configurations.elixir = {
+          {
+            type = "mix_task",
+            name = "phoenix server",
+            task = "phx.server",
+            request = "launch",
+            projectDir = "${workspaceFolder}",
+            exitAfterTaskReturns = false,
+            debugAutoInterpretAllModules = false,
+          },
+        }
+      end
+
       -- Automatically open DAP UI when debugging starts
-      dap.listeners.after.event_initialized["dapui_config"] = function()
+      dap.listeners.before.attach.dapui_config = function()
         dapui.open()
       end
-
-      -- Automatically close DAP UI when debugging ends
-      dap.listeners.before.event_terminated["dapui_config"] = function()
+      dap.listeners.before.launch.dapui_config = function()
+        dapui.open()
+      end
+      dap.listeners.before.event_terminated.dapui_config = function()
         dapui.close()
       end
-
-      dap.listeners.before.event_exited["dapui_config"] = function()
+      dap.listeners.before.event_exited.dapui_config = function()
         dapui.close()
       end
 
@@ -630,7 +669,14 @@ return {
       -- Keymaps for debugging (macOS-friendly)
       vim.keymap.set('n', '<leader>db', function()
         dap.toggle_breakpoint()
-        vim.cmd('redraw!')  -- Force redraw to show breakpoint sign immediately
+        vim.defer_fn(function()
+          -- Temporarily toggle cursorline to force signcolumn redraw
+          local current_cursorline = vim.opt_local.cursorline:get()
+          vim.opt_local.cursorline = true
+          vim.defer_fn(function()
+            vim.opt_local.cursorline = current_cursorline
+          end, 5) -- Short delay before restoring cursorline
+        end, 50) -- Main delay
         local line = vim.fn.line('.')
         local file = vim.fn.expand('%:p')
         vim.notify(string.format('Breakpoint toggled at %s:%d', vim.fn.fnamemodify(file, ':t'), line), vim.log.levels.INFO)
@@ -639,6 +685,7 @@ return {
       vim.keymap.set('n', '<F8>', dap.continue, { desc = 'Continue' })
       vim.keymap.set('n', '<F6>', dap.step_into, { desc = 'Step Into' })
       vim.keymap.set('n', '<F7>', dap.step_over, { desc = 'Step Over' })
+      vim.keymap.set('n', 'S-F7>', dap.step_back, { desc = 'Step Back'})
       vim.keymap.set('n', '<S-F6>', dap.step_out, { desc = 'Step Out' })
       vim.keymap.set('n', '<S-F5>', dap.terminate, { desc = 'Stop Debugging' })
       vim.keymap.set('n', '<leader>dr', dap.repl.toggle, { desc = 'Toggle REPL' })

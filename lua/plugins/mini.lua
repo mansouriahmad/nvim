@@ -39,16 +39,16 @@ return {
 			})
 		end,
 	},
-	{
-		'echasnovski/mini.basics',
-		version = false,
-		opts = {
-			mappings = {
-				windows = true,
-				move_with_alt = true,
-			},
-		},
-	},
+	-- {
+	-- 	'echasnovski/mini.basics',
+	-- 	version = false,
+	-- 	opts = {
+	-- 		mappings = {
+	-- 			windows = true,
+	-- 			move_with_alt = true,
+	-- 		},
+	-- 	},
+	-- },
 	{
 		'echasnovski/mini.files',
 		version = false,
@@ -134,15 +134,15 @@ return {
 				comment = '<leader>/',
 				comment_line = '<leader>/',
 				comment_visual = '<leader>/',
-				textobject = '<leader>/',
+				textobject = '<leader>/', -- This can remain as <leader>/ or be changed as desired.
 			}
 		},
 	},
-	{
-		'echasnovski/mini.notify',
-		version = false,
-		config = true,
-	},
+	-- {
+	-- 	'echasnovski/mini.notify',
+	-- 	version = false,
+	-- 	config = true,
+	-- },
 	{
 		'echasnovski/mini.trailspace',
 		version = false,
