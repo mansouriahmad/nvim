@@ -2,20 +2,21 @@ local plugins = {
 	require('plugins.which-key'),
 	require('plugins.colorschemes'),
 	require('plugins.telescope'),
-	require('plugins.lightline'),
+	--require('plugins.lightline'),
 	require('plugins.git'),
 	require('plugins.trouble'), -- This is fancy UI for showing the errors
 	require('plugins.treesitter'),
 	require('plugins.debug'),
   require('plugins.toggleterm'),
   require('plugins.bufferline'),
-  require('plugins.autopairs'),
+  --require('plugins.autopairs'),
   require('plugins.snacks'),
   require('plugins.qol'),
   require('plugins.flash'),
-  require('plugins.hlchunk'),
+  --require('plugins.hlchunk'),
   require('plugins.vim-tmux-navigator'),
-  require('plugins.nvim-tree')
+  require('plugins.nvim-tree'),
+  require('plugins.lsp'),
 }
 
 local opts = {
