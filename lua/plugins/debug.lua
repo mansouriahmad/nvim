@@ -172,15 +172,41 @@ return {
           end
       end
 
-      -- Keymaps
+      -- FIXED: Better terminate function that ensures proper cleanup
+      local function terminate_dap()
+        dap.terminate({}, { terminateDebuggee = true }, function()
+          dap.repl.close()
+          dapui.close()
+          vim.notify("Debug session terminated", vim.log.levels.INFO)
+        end)
+      end
+
+      -- Keymaps with FIXED terminate functionality
       vim.keymap.set("n", "<leader>db", dap.toggle_breakpoint, { desc = "Toggle Breakpoint" })
       vim.keymap.set("n", "<F5>", launch_debugger, { desc = "Launch/Continue Debugging (Auto-Build & Auto-Detect Rust)" })
       vim.keymap.set("n", "<F6>", dap.step_into, { desc = "Step Into" })
       vim.keymap.set("n", "<F7>", dap.step_over, { desc = "Step Over" })
-      vim.keymap.set("n", "<S-F6>", dap.step_out, { desc = "Step Out" })
-      vim.keymap.set("n", "<S-F5>", dap.terminate, { desc = "Stop Debugging" })
+      vim.keymap.set("n", "<F8>", dap.step_out, { desc = "Step Out" })  -- Changed from S-F6 to F8
+      
+      -- FIXED: Multiple options for terminating debug session
+      vim.keymap.set("n", "<F9>", terminate_dap, { desc = "Stop Debugging" })  -- F9 as primary stop
+      vim.keymap.set("n", "<leader>ds", terminate_dap, { desc = "Stop/Terminate Debugging" })  -- Leader key alternative
+      vim.keymap.set("n", "<leader>dt", terminate_dap, { desc = "Terminate Debug Session" })  -- Another alternative
+      
+      -- Try these if your terminal supports them
+      vim.keymap.set("n", "<S-F5>", terminate_dap, { desc = "Stop Debugging (Shift-F5)" })
+      vim.keymap.set("n", "<F17>", terminate_dap, { desc = "Stop Debugging (F17=Shift-F5)" })  -- Some terminals send F17 for Shift-F5
+      
       vim.keymap.set("n", "<leader>dr", dap.repl.toggle, { desc = "Toggle REPL" })
       vim.keymap.set("n", "<leader>du", dapui.toggle, { desc = "Toggle DAP UI" })
+      
+      -- Additional useful debug keymaps
+      vim.keymap.set("n", "<leader>dl", dap.run_last, { desc = "Run Last Debug Configuration" })
+      vim.keymap.set("n", "<leader>dp", dap.pause, { desc = "Pause Execution" })
+      vim.keymap.set("n", "<leader>dB", function()
+        dap.set_breakpoint(vim.fn.input('Breakpoint condition: '))
+      end, { desc = "Set Conditional Breakpoint" })
+      vim.keymap.set("n", "<leader>dc", dap.clear_breakpoints, { desc = "Clear All Breakpoints" })
 
       -- Check and install codelldb if not present
       local function check_and_install_codelldb()

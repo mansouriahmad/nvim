@@ -64,7 +64,7 @@ return {
         },
         signs = true,
         underline = true,
-        update_in_insert = false,
+        update_in_insert = true,  -- CHANGED: This enables diagnostics while typing
         severity_sort = true,
       })
 
@@ -171,8 +171,11 @@ return {
       -- nvim-cmp capabilities
       local capabilities = vim.lsp.protocol.make_client_capabilities()
       capabilities = require("cmp_nvim_lsp").default_capabilities(capabilities)
+      
+      -- Enable snippets support
+      capabilities.textDocument.completion.completionItem.snippetSupport = true
 
-      -- Rust Analyzer configuration
+      -- Rust Analyzer configuration (FIXED: removed duplicate diagnostics sections)
       lspconfig.rust_analyzer.setup({
         capabilities = capabilities,
         settings = {
@@ -182,30 +185,12 @@ return {
               loadOutDirsFromCheck = true,
               runBuildScripts = true,
             },
+            -- Check on save with clippy
             checkOnSave = {
+              allFeatures = true,
               command = "clippy",
               extraArgs = { "--no-deps" },
             },
-                  diagnostics = {
-        enable = true,
-        experimental = {
-          enable = true,
-        },
-        -- This is the key setting!
-        previewRustcOutput = true,
-      },
-      -- Also add this for faster updates:
-      lsp = {
-        inlayHints = {
-          enabled = true,
-        },
-      },
-      -- Make diagnostics appear faster:
-      workspace = {
-        didChangeWatchedFiles = {
-          dynamicRegistration = true,
-        },
-      },
             procMacro = {
               enable = true,
               ignored = {
@@ -214,6 +199,16 @@ return {
                 ["async-recursion"] = { "async_recursion" },
               },
             },
+            -- Real-time diagnostics configuration (FIXED: only one diagnostics section)
+            diagnostics = {
+              enable = true,
+              experimental = {
+                enable = true,
+              },
+              disabled = false,
+              enableExperimental = true,
+            },
+            -- Inlay hints configuration
             inlayHints = {
               bindingModeHints = {
                 enable = false,
@@ -246,14 +241,13 @@ return {
                 hideNamedConstructor = false,
               },
             },
-            diagnostics = {
-              enable = true,
-              experimental = {
-                enable = true,
-              },
-            },
           },
         },
+        -- Additional rust-analyzer specific options
+        on_attach = function(client, bufnr)
+          -- Request semantic tokens for better highlighting
+          client.server_capabilities.semanticTokensProvider = nil
+        end,
       })
 
       -- Lua LS for Neovim configuration
@@ -293,7 +287,7 @@ return {
     end,
   },
 
-  -- Autocompletion
+  -- Autocompletion (keeping your existing config)
   {
     "hrsh7th/nvim-cmp",
     event = "InsertEnter",
@@ -393,7 +387,7 @@ return {
     end,
   },
 
-  -- Better Rust tools (optional but highly recommended)
+  -- Better Rust tools (keeping your existing config)
   {
     "simrat39/rust-tools.nvim",
     ft = "rust",
@@ -417,7 +411,7 @@ return {
     end,
   },
 
-  -- Crate management for Cargo.toml
+  -- Crate management for Cargo.toml (keeping your existing config)
   {
     "saecki/crates.nvim",
     ft = { "toml" },
