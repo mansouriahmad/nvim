@@ -108,7 +108,7 @@ return {
           
           -- Documentation
           vim.keymap.set("n", "K", vim.lsp.buf.hover, desc_opts("Hover documentation"))
-          vim.keymap.set("n", "<C-k>", vim.lsp.buf.signature_help, desc_opts("Signature help"))
+          vim.keymap.set("n", "<leader>gs", vim.lsp.buf.signature_help, desc_opts("Signature help"))
           
           -- Workspace
           vim.keymap.set("n", "<leader>wa", vim.lsp.buf.add_workspace_folder, desc_opts("Add workspace folder"))

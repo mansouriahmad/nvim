@@ -1,6 +1,6 @@
 local plugins = {
 	require('plugins.which-key'),
-	require('plugins.colorschemes'),
+  require('plugins.colorschemes'),
 	require('plugins.telescope'),
 	--require('plugins.lightline'),
 	require('plugins.git'),
@@ -9,14 +9,14 @@ local plugins = {
 	require('plugins.debug'),
   require('plugins.toggleterm'),
   require('plugins.bufferline'),
-  --require('plugins.autopairs'),
   require('plugins.snacks'),
   require('plugins.qol'),
   require('plugins.flash'),
-  --require('plugins.hlchunk'),
-  require('plugins.vim-tmux-navigator'),
+  require('plugins.mini'),
   require('plugins.nvim-tree'),
   require('plugins.lsp'),
+  require('plugins.vim-tmux-navigator'),
+  require('plugins.lualine')
 }
 
 local opts = {
