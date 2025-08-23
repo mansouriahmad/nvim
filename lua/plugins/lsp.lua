@@ -10,7 +10,7 @@ return {
       'hrsh7th/cmp-path',
       'saadparwaiz1/cmp_luasnip',
       'L3MON4D3/LuaSnip',    -- Snippet engine
-      'j-hui/fidget.nvim',   -- LSP progress indicator
+      -- 'j-hui/fidget.nvim',   -- LSP progress indicator
     },
     config = function()
       local lspconfig = require('lspconfig')
@@ -20,11 +20,24 @@ return {
       local luasnip = require('luasnip')
 
       -- Fidget for LSP progress messages
-      require('fidget').setup({
-        integration = {
-          nvim_notify = true, -- Integrate with vim.notify
-        },
-      })
+      -- require('fidget').setup({
+      --   -- Set `nvim_notify` to false to make fidget less intrusive
+      --   integration = {
+      --     nvim_notify = false,
+      --   },
+      --   -- Optional: Further customize fidget's display
+      --   align = "bottom", -- or "top", "right", "left"
+      --   timer_float_up = 1000, -- how long float goes up
+      --   timer_decay = 4000, -- how long till message decays
+      --   max_width = 80,
+      --   max_height = 10,
+      --   progress = {
+      --     display = {
+      --       done = false,       -- Do not show completed progress messages
+      --       progress = false,   -- Do not show in-progress messages
+      --     },
+      --   },
+      -- })
 
       -- Mason setup for installing LSP servers (with error handling)
       local ok, mason_setup_error = pcall(mason.setup)
@@ -86,7 +99,47 @@ return {
         local common_buf_opts = { noremap = true, silent = true, buffer = bufnr }
 
         my_mapper.buf_map('n', 'gD', vim.lsp.buf.declaration, "Go Declaration", bufnr)
-        my_mapper.buf_map('n', 'gd', vim.lsp.buf.definition, "Go Definition", bufnr)
+        vim.keymap.set('n', 'gd', function()
+          local util = vim.lsp.util
+          local definitions = vim.lsp.buf.definition()
+
+          if not definitions or #definitions == 0 then
+            vim.notify("No definitions found", vim.log.levels.INFO)
+            return
+          end
+
+          -- Debugging: Log raw definitions
+          vim.notify("Raw definitions count: " .. #definitions, vim.log.levels.INFO)
+          -- For detailed inspection, you might need to iterate and log each definition
+          for i, def in ipairs(definitions) do
+            vim.notify(string.format("Def %d: %s, %d:%d", i, def.uri, def.range.start.line, def.range.start.character), vim.log.levels.INFO)
+          end
+
+          local unique_definitions = {}
+          local seen = {}
+
+          for _, def in ipairs(definitions) do
+            local key = def.uri .. ":" .. def.range.start.line .. ":" .. def.range.start.character
+            if not seen[key] then
+              table.insert(unique_definitions, def)
+              seen[key] = true
+            end
+          end
+
+          -- Debugging: Log unique definitions count
+          vim.notify("Unique definitions count: " .. #unique_definitions, vim.log.levels.INFO)
+
+          if #unique_definitions == 1 then
+            -- If only one unique definition, go directly to it
+            util.jump_to_location(unique_definitions[1].uri, unique_definitions[1].range.start)
+          elseif #unique_definitions > 1 then
+            -- If multiple unique definitions, open them in the quickfix list
+            util.set_qflist(unique_definitions)
+            vim.cmd('copen') -- Open quickfix window
+          else
+            vim.notify("No unique definitions found", vim.log.levels.INFO)
+          end
+        end, common_buf_opts)
         my_mapper.buf_map('n', 'K', vim.lsp.buf.hover, "Show Docs", bufnr)
         my_mapper.buf_map('n', 'gi', vim.lsp.buf.implementation, "Go Implementation", bufnr)
         my_mapper.buf_map('n', 'gs', vim.lsp.buf.signature_help, "Display Signature", bufnr)
@@ -185,7 +238,8 @@ return {
         on_attach = on_attach,
         settings = {
           ['rust-analyzer'] = {
-            checkOnSave = {
+            checkOnSave = true,
+            check = {
               command = 'clippy',
             },
             inlayHints = {

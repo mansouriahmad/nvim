@@ -49,17 +49,17 @@ return {
 	-- 		},
 	-- 	},
 	-- },
-	{
-		'echasnovski/mini.files',
-		version = false,
-		keys = function()
-			local MiniFiles = require('mini.files')
-
-			return {
-				{ '<leader>e', function() MiniFiles.open() end },
-			}
-		end,
-	},
+    -- {
+    -- 	'echasnovski/mini.files',
+    -- 	version = false,
+    -- 	keys = function()
+    -- 		local MiniFiles = require('mini.files')
+    -- 
+    -- 		return {
+    -- 			{ '<leader>e', function() MiniFiles.open() end },
+    -- 		}
+    -- 	end,
+    -- },
 	{
 		'echasnovski/mini.statusline',
 		version = false,

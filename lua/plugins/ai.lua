@@ -1,4 +1,4 @@
-local configs = require("configs")
+jlocal configs = require("configs")
 
 return configs.ai and configs.ai.enabled and {
 	{

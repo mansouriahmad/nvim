@@ -8,7 +8,6 @@ local plugins = {
 	require('plugins.trouble'), -- This is fancy UI for showing the errors
 	require('plugins.treesitter'),
 	require('plugins.debug'),
-  require('plugins.noice'),
   require('plugins.toggleterm'),
   require('plugins.bufferline'),
   require('plugins.autopairs'),
@@ -17,7 +16,7 @@ local plugins = {
   require('plugins.flash'),
   require('plugins.hlchunk'),
   require('plugins.vim-tmux-navigator'),
-  require('plugins.mini')
+  require('plugins.neo-tree')
 }
 
 local opts = {

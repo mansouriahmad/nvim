@@ -130,11 +130,28 @@ return {
       local breakpoints_file = vim.fn.stdpath("data") .. "/breakpoints.json"
       local pending_breakpoints = {}
 
+      local function ensure_directory_exists(path)
+        local dir_path = path:match("(.*/)") -- Extract directory from full path
+        if dir_path and vim.fn.isdirectory(dir_path) == 0 then
+          local ok, err = pcall(vim.fn.mkdir, dir_path, "p") -- Create parent directories if they don't exist
+          if not ok then
+            vim.notify('[DAP] Error creating directory ' .. dir_path .. ': ' .. tostring(err), vim.log.levels.ERROR)
+            return false
+          end
+        end
+        return true
+      end
+
       -- Save all breakpoints to file
       local function save_breakpoints()
+        vim.notify('[DAP] Save: Attempting to save breakpoints...', vim.log.levels.INFO)
+        if not ensure_directory_exists(breakpoints_file) then
+          vim.notify('[DAP] Save: Failed to ensure directory exists for breakpoints file.', vim.log.levels.ERROR)
+          return
+        end
         local all_bps = dap.list_breakpoints()
         if type(all_bps) ~= 'table' then
-          print('[DAP] No breakpoints to save.')
+          vim.notify('[DAP] Save: No breakpoints to save.', vim.log.levels.INFO)
           return
         end
         local data = {}
@@ -154,11 +171,15 @@ return {
         end
         local f = io.open(breakpoints_file, "w")
         if f then
-          f:write(vim.json.encode(data))
+          local ok, err = pcall(f.write, f, vim.json.encode(data))
           f:close()
-          print("[DAP] Breakpoints saved to " .. breakpoints_file)
+          if ok then
+            vim.notify("[DAP] Save: Breakpoints saved to " .. breakpoints_file, vim.log.levels.INFO)
+          else
+            vim.notify("[DAP] Save: Failed to encode or write breakpoints: " .. tostring(err), vim.log.levels.ERROR)
+          end
         else
-          print("[DAP] Failed to save breakpoints!")
+          vim.notify("[DAP] Save: Failed to open breakpoints file for writing: " .. breakpoints_file, vim.log.levels.ERROR)
         end
       end
 
@@ -177,11 +198,17 @@ return {
       -- Load breakpoints from file, defer if buffer not loaded
       local function load_breakpoints()
         local f = io.open(breakpoints_file, "r")
-        if not f then print("[DAP] No breakpoints file found.") return end
+        if not f then
+          vim.notify("[DAP] Load: No breakpoints file found at " .. breakpoints_file, vim.log.levels.INFO)
+          return
+        end
         local content = f:read("*a")
         f:close()
         local ok, data = pcall(vim.json.decode, content)
-        if not ok or type(data) ~= 'table' then print("[DAP] Failed to decode breakpoints file.") return end
+        if not ok or type(data) ~= 'table' then
+          vim.notify("[DAP] Load: Failed to decode breakpoints file: " .. tostring(data), vim.log.levels.ERROR)
+          return
+        end
         pending_breakpoints = {}
         for _, bp in ipairs(data) do
           if bp.file and bp.line then
@@ -192,7 +219,7 @@ return {
             end
           end
         end
-        print("[DAP] Breakpoints loaded (pending for unopened files)")
+        vim.notify("[DAP] Load: Breakpoints loaded (" .. #data .. " total, " .. vim.tbl_count(pending_breakpoints) .. " pending for unopened files)", vim.log.levels.INFO)
       end
 
       -- On BufReadPost, set any pending breakpoints for that file
@@ -242,7 +269,10 @@ return {
 
       -- Save breakpoints on exit
       vim.api.nvim_create_autocmd("VimLeavePre", {
-        callback = save_breakpoints
+        callback = function()
+          vim.notify('[DAP] VimLeavePre: Triggering save_breakpoints...', vim.log.levels.INFO)
+          save_breakpoints()
+        end
       })
 
       -- Load breakpoints on startup (with delay)
@@ -390,6 +420,50 @@ return {
         local cwd = vim.fn.getcwd()
         local test_files = vim.fn.glob(cwd .. '/target/debug/deps/*-*', false, true)
         return test_files
+      end
+
+      -- Function to automatically find .NET executable/DLL
+      local function get_dotnet_executable_dll()
+          local cwd = vim.fn.getcwd()
+          local project_file = nil
+
+          -- Find .csproj or .fsproj file
+          for _, file in ipairs(vim.fn.glob(cwd .. '/**/*.csproj', true, true) or {}) do
+              project_file = file
+              break
+          end
+          if not project_file then
+              for _, file in ipairs(vim.fn.glob(cwd .. '/**/*.fsproj', true, true) or {}) do
+                  project_file = file
+                  break
+              end
+          end
+
+          if not project_file then
+              vim.notify('No .NET project file (*.csproj or *.fsproj) found.', vim.log.levels.WARN)
+              return nil
+          end
+
+          -- Extract project name from file path (e.g., /path/to/MyProject.csproj -> MyProject)
+          local project_name = vim.fn.fnamemodify(project_file, ':t:r')
+
+          -- Common build output directories
+          local configurations = {'Debug', 'Release'}
+          local tfms = { -- Target Framework Monikers (common ones)
+              'net8.0', 'net7.0', 'net6.0', 'net5.0', 'netcoreapp3.1', 'netstandard2.1',
+          }
+
+          for _, config in ipairs(configurations) do
+              for _, tfm in ipairs(tfms) do
+                  local dll_path = cwd .. '/bin/' .. config .. '/' .. tfm .. '/' .. project_name .. '.dll'
+                  if vim.fn.filereadable(dll_path) == 1 then
+                      return dll_path
+                  end
+              end
+          end
+
+          vim.notify('No .NET executable/DLL found in common build paths. Try running: dotnet build', vim.log.levels.WARN)
+          return nil
       end
 
       -- Rust debugging configurations (cross-platform)
@@ -666,22 +740,91 @@ return {
         })
       end
 
+      -- Function to launch debugger based on filetype
+      local function launch_debugger()
+          local filetype = vim.bo.filetype
+          local dap = require('dap')
+
+          if filetype == 'rust' then
+              local exe = get_rust_executable()
+              if exe then
+                  dap.run({
+                      name = "Debug Binary (Auto)",
+                      type = "codelldb",
+                      request = "launch",
+                      program = exe,
+                      cwd = '${workspaceFolder}',
+                      stopOnEntry = false,
+                      args = {},
+                      console = 'integratedTerminal',
+                  })
+              else
+                  vim.notify('No Rust executable found for debugging.', vim.log.levels.ERROR)
+              end
+          elseif filetype == 'cs' or filetype == 'fsharp' then
+              local dll = get_dotnet_executable_dll()
+              if dll then
+                  dap.run({
+                      type = 'coreclr',
+                      name = 'Launch - NetCoreDbg (Auto)',
+                      request = 'launch',
+                      program = dll,
+                      cwd = '${workspaceFolder}',
+                      console = 'integratedTerminal',
+                  })
+              else
+                  vim.notify('No .NET executable/DLL found for debugging.', vim.log.levels.ERROR)
+              end
+          elseif filetype == 'python' then
+              dap.run({
+                  name = "Python: Current File",
+                  type = "python",
+                  request = "launch",
+                  program = "${file}",
+                  console = "integratedTerminal",
+                  justMyCode = true,
+              })
+          else
+              vim.notify('No automatic debug configuration for ' .. filetype, vim.log.levels.INFO)
+              -- Fallback to opening DAP UI to allow manual selection
+              require('dapui').open()
+              dap.repl.open()
+          end
+      end
+
       -- Keymaps for debugging (macOS-friendly)
       vim.keymap.set('n', '<leader>db', function()
-        dap.toggle_breakpoint()
-        vim.defer_fn(function()
-          -- Temporarily toggle cursorline to force signcolumn redraw
-          local current_cursorline = vim.opt_local.cursorline:get()
-          vim.opt_local.cursorline = true
+          local dap = require('dap')
+          local bufnr = vim.api.nvim_get_current_buf()
+          local line = vim.api.nvim_win_get_cursor(0)[1] - 1 -- nvim-dap expects 0-indexed line
+          local file = vim.fn.expand('%:p')
+
+          -- Check if a breakpoint exists at this position
+          local existing_bp = dap.get_breakpoint_by_file_and_line(file, line)
+
+          if existing_bp then
+              dap.clear_breakpoint(existing_bp) -- Clear by breakpoint object
+              vim.notify(string.format('Breakpoint removed at %s:%d', vim.fn.fnamemodify(file, ':t'), line + 1), vim.log.levels.INFO)
+          else
+              -- Set a new breakpoint
+              local new_bp = dap.set_breakpoint(bufnr, line) -- set_breakpoint returns the new breakpoint
+              if new_bp then
+                  vim.notify(string.format('Breakpoint toggled at %s:%d (ID: %s)', vim.fn.fnamemodify(file, ':t'), line + 1, new_bp.id), vim.log.levels.INFO)
+              else
+                  vim.notify(string.format('Failed to set breakpoint at %s:%d', vim.fn.fnamemodify(file, ':t'), line + 1), vim.log.levels.ERROR)
+              end
+          end
+
           vim.defer_fn(function()
-            vim.opt_local.cursorline = current_cursorline
-          end, 5) -- Short delay before restoring cursorline
-        end, 50) -- Main delay
-        local line = vim.fn.line('.')
-        local file = vim.fn.expand('%:p')
-        vim.notify(string.format('Breakpoint toggled at %s:%d', vim.fn.fnamemodify(file, ':t'), line), vim.log.levels.INFO)
+              -- Temporarily toggle cursorline to force signcolumn redraw
+              local current_cursorline = vim.opt_local.cursorline:get()
+              vim.opt_local.cursorline = true
+              vim.defer_fn(function()
+                  vim.opt_local.cursorline = current_cursorline
+              end, 5) -- Short delay before restoring cursorline
+          end, 50) -- Main delay
       end, { desc = 'Toggle Breakpoint' })
-      vim.keymap.set('n', '<F5>', dap.continue, { desc = 'Start/Continue Debugging' })
+      vim.keymap.set('n', '<F5>', launch_debugger, { desc = 'Start/Continue Debugging (Auto-Detect)' })
       vim.keymap.set('n', '<F8>', dap.continue, { desc = 'Continue' })
       vim.keymap.set('n', '<F6>', dap.step_into, { desc = 'Step Into' })
       vim.keymap.set('n', '<F7>', dap.step_over, { desc = 'Step Over' })
