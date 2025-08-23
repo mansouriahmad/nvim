@@ -5,8 +5,7 @@ require 'lazy-bootstrap'
 
 require 'lazy-plugins'
 
-vim.cmd.colorscheme("everforest")
-
+require 'selected-theme'
 vim.o.background = "dark"
 -- Set colors for regular line numbers and current line number
 vim.api.nvim_set_hl(0, "LineNr", { fg = "#888888", bold = true }) -- Regular line numbers (bright white)

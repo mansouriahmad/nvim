@@ -77,5 +77,37 @@ return {
         transparent_mode = false,
       })
     end
-  }
+  },
+  {
+    'catppuccin/nvim',
+    name = 'catppuccin',
+    priority = 1000,
+    config = function()
+      require('catppuccin').setup({
+        flavour = 'mocha', -- latte, frappe, macchiato, mocha
+        background = {
+          light = 'latte',
+          dark = 'mocha',
+        },
+        transparent_background = false,
+        term_colors = true,
+        dim_inactive = {
+          enabled = false,
+          shade = 0.6,
+          percentage = 0.0,
+        },
+        no_italic = false,
+        no_bold = false,
+        integrations = {
+          cmp = true,
+          gitsigns = true,
+          nvimtree = true,
+          telescope = true,
+          which_key = true,
+          -- ... and many more
+        },
+      })
+      vim.cmd.colorscheme('catppuccin')
+    end,
+  },
 }

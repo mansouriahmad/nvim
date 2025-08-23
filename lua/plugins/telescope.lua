@@ -129,6 +129,8 @@ return {
         'github_dark_dimmed',
         'github_light',
         'github_light_default',
+        'rose-pine',
+        'catppuccin',
       }
       
       local current_theme_index = 1
@@ -174,7 +176,7 @@ return {
         pattern = '*',
         callback = function(args)
           -- Uncomment the next line if you want to persist theme selection
-          -- save_theme_selection(args.match)
+          save_theme_selection(args.match)
         end,
       })
 
