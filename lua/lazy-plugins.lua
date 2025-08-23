@@ -16,7 +16,7 @@ local plugins = {
   require('plugins.flash'),
   require('plugins.hlchunk'),
   require('plugins.vim-tmux-navigator'),
-  require('plugins.neo-tree')
+  require('plugins.nvim-tree')
 }
 
 local opts = {

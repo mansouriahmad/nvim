@@ -235,7 +235,10 @@ return {
       })
 
       lspconfig.rust_analyzer.setup({
-        on_attach = on_attach,
+        on_attach = function(client, bufnr)
+          client.resolved_capabilities.document_diagnostics = false
+          on_attach(client, bufnr)
+        end,
         settings = {
           ['rust-analyzer'] = {
             checkOnSave = true,
