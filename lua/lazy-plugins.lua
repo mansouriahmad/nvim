@@ -4,7 +4,6 @@ local plugins = {
 	require('plugins.telescope'),
 	require('plugins.lightline'),
 	require('plugins.git'),
-	require('plugins.lsp'),
 	require('plugins.trouble'), -- This is fancy UI for showing the errors
 	require('plugins.treesitter'),
 	require('plugins.debug'),
