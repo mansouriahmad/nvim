@@ -30,9 +30,9 @@ return {
 		keys = {
 			-- { "<c-/>", function() Snacks.terminal() end, desc = "Toggle Terminal"},
 			{ "<leader>rr", function() Snacks.rename.rename_file() end, desc = "Rename File" },
-			{ "<leader>ff", function() Snacks.picker.files() end,       desc = "Find Files" },
-			{ "<leader>fw", function() Snacks.picker.grep() end,        desc = "Grep" },
-			{ "<leader>fb", function() Snacks.picker.buffers() end,     desc = "Buffers" },
+			{ "<leader>sf", function() Snacks.picker.files() end,       desc = "Find Files" },
+			{ "<leader>sg", function() Snacks.picker.grep() end,        desc = "Grep" },
+			{ "<leader>sb", function() Snacks.picker.buffers() end,     desc = "Buffers" },
 		},
 		init = function()
 			vim.api.nvim_create_autocmd("User", {
