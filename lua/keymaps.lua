@@ -50,7 +50,7 @@ vim.keymap.set("n", "<leader>j", ":m .+1<CR>==", { noremap = true, silent = true
 vim.keymap.set("n", "<leader>k", ":m .-2<CR>==", { noremap = true, silent = true, desc = "move text to a line above"})
 
 -- Visual mode
-vim.keymap.set("x", "<leader>j", ":m '>+1<CR>gv=gv")
+vim.keymap.set("x", "<k", ":m '>+1<CR>gv=gv")
 vim.keymap.set("x", "<leader>k", ":m '<-2<CR>gv=gv")
 
 -- Updates how vim uses registers when pasting
