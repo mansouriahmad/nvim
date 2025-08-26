@@ -34,7 +34,6 @@ return {
           "bashls",        -- Shell scripts
           "pyright",       -- Python LSP
           "ruff",          -- Python linter/formatter
-          "omnisharp",     -- C# LSP Server
         },
         automatic_installation = true,
       })
@@ -74,43 +73,14 @@ return {
         end
       end
 
-      -- Helper function to get the correct dotnet command and find projects
-local function get_dotnet_info()
-  local cwd = vim.fn.getcwd()
-  
-  -- Check if dotnet is available
-  if vim.fn.executable("dotnet") == 0 then
-    vim.notify("dotnet CLI not found in PATH", vim.log.levels.ERROR)
-    return nil
-  end
-  
-  -- Find .csproj or .sln files
-  local project_files = {}
-  local sln_files = vim.fn.glob(cwd .. "/*.sln", false, true)
-  local csproj_files = vim.fn.glob(cwd .. "/**/*.csproj", false, true)
-  
-  -- Prefer solution files, then project files
-  if #sln_files > 0 then
-    return {
-      type = "solution",
-      file = sln_files[1],
-      directory = cwd
-    }
-  elseif #csproj_files > 0 then
-    return {
-      type = "project", 
-      file = csproj_files[1],
-      directory = vim.fn.fnamemodify(csproj_files[1], ":h")
-    }
-  else
-    vim.notify("No .sln or .csproj files found in workspace", vim.log.levels.WARN)
-    return nil
-  end
-end
-
-
       local lspconfig = require("lspconfig")
       local configs = require("configs")
+
+      -- nvim-cmp capabilities (FIXED: moved before LSP setups)
+      local capabilities = vim.lsp.protocol.make_client_capabilities()
+      capabilities = require("cmp_nvim_lsp").default_capabilities(capabilities)
+      -- Enable snippets support
+      capabilities.textDocument.completion.completionItem.snippetSupport = true
 
       -- Diagnostic configuration
       vim.diagnostic.config({
@@ -142,12 +112,6 @@ end
       vim.lsp.handlers["textDocument/signatureHelp"] = vim.lsp.with(
         vim.lsp.handlers.signature_help, { border = "rounded" }
       )
-
-      -- nvim-cmp capabilities (FIXED: moved before LSP setups)
-      local capabilities = vim.lsp.protocol.make_client_capabilities()
-      capabilities = require("cmp_nvim_lsp").default_capabilities(capabilities)
-      -- Enable snippets support
-      capabilities.textDocument.completion.completionItem.snippetSupport = true
 
       -- LSP Attach configuration
       vim.api.nvim_create_autocmd("LspAttach", {
@@ -215,7 +179,7 @@ end
             end, desc_opts("Cargo run"))
           end
 
-          -- FIXED: Python-specific keymaps (functions now defined above)
+          -- Python-specific keymaps (FIXED: functions now defined above)
           if client.name == "pyright" or client.name == "ruff" then
             local python_cmd = get_python_command()
             local pip_cmd = get_pip_command()
@@ -240,44 +204,6 @@ end
               vim.cmd("!" .. python_cmd .. " -m venv .venv")
             end, desc_opts("Create virtual environment"))
           end
-          -- C#-specific keymaps
-if client.name == "omnisharp" then
-  local dotnet_info = get_dotnet_info()
-  
-  if dotnet_info then
-    vim.keymap.set("n", "<leader>cb", function()
-      vim.cmd("!dotnet build " .. vim.fn.shellescape(dotnet_info.file))
-    end, desc_opts("Build C# project"))
-    
-    vim.keymap.set("n", "<leader>cr", function()
-      if dotnet_info.type == "solution" then
-        vim.cmd("!dotnet run --project " .. vim.fn.shellescape(dotnet_info.file))
-      else
-        vim.cmd("!dotnet run --project " .. vim.fn.shellescape(dotnet_info.file))
-      end
-    end, desc_opts("Run C# project"))
-    
-    vim.keymap.set("n", "<leader>ct", function()
-      vim.cmd("!dotnet test " .. vim.fn.shellescape(dotnet_info.file))
-    end, desc_opts("Run C# tests"))
-    
-    vim.keymap.set("n", "<leader>cc", function()
-      vim.cmd("!dotnet clean " .. vim.fn.shellescape(dotnet_info.file))
-    end, desc_opts("Clean C# project"))
-    
-    vim.keymap.set("n", "<leader>cp", function()
-      vim.cmd("!dotnet publish " .. vim.fn.shellescape(dotnet_info.file))
-    end, desc_opts("Publish C# project"))
-    
-    vim.keymap.set("n", "<leader>cn", function()
-      local project_name = vim.fn.input("Project name: ")
-      if project_name ~= "" then
-        vim.cmd("!dotnet new console -n " .. vim.fn.shellescape(project_name))
-      end
-    end, desc_opts("Create new C# console project"))
-  end
-end
-
 
           -- Telescope integration for LSP
           local telescope_builtin = require("telescope.builtin")
@@ -297,6 +223,43 @@ end
           end
         end,
       })
+
+      -- Custom breakpoint signs for better clarity
+      vim.fn.sign_define('DapBreakpoint', {
+        text = '🔴', -- Red circle for breakpoint
+        texthl = 'DapBreakpoint',
+        linehl = '',
+        numhl = 'DapBreakpoint'
+      })
+
+      vim.fn.sign_define('DapBreakpointCondition', {
+        text = '🟡', -- Yellow circle for conditional breakpoint
+        texthl = 'DapBreakpointCondition',
+        linehl = '',
+        numhl = 'DapBreakpointCondition'
+      })
+
+      vim.fn.sign_define('DapBreakpointRejected', {
+        text = '❌', -- X for rejected/invalid breakpoint
+        texthl = 'DapBreakpointRejected',
+        linehl = '',
+        numhl = 'DapBreakpointRejected'
+      })
+
+      vim.fn.sign_define('DapStopped', {
+        text = '▶️', -- Play button for current execution point
+        texthl = 'DapStopped',
+        linehl = 'DapStoppedLine',
+        numhl = 'DapStopped'
+      })
+
+      vim.fn.sign_define('DapLogPoint', {
+        text = '📝', -- Note for log points
+        texthl = 'DapLogPoint',
+        linehl = '',
+        numhl = 'DapLogPoint'
+      })
+
 
       -- Rust Analyzer configuration
       lspconfig.rust_analyzer.setup({
@@ -408,57 +371,6 @@ end
           },
         },
       })
-
-      - C# Language Server (OmniSharp)
-lspconfig.omnisharp.setup({
-  capabilities = capabilities,
-  cmd = { "omnisharp" },
-  settings = {
-    FormattingOptions = {
-      -- Enables support for reading code style, naming convention and analyzer
-      -- settings from .editorconfig.
-      EnableEditorConfigSupport = true,
-      -- Specifies whether 'using' directives should be grouped and sorted during
-      -- document formatting.
-      OrganizeImports = true,
-    },
-    MsBuild = {
-      -- If true, MSBuild project system will only load projects for files that
-      -- were opened in the editor. This setting is useful for big C# codebases
-      -- and allows for faster initialization of code navigation features only
-      -- for projects that are relevant to code that is being edited. With this
-      -- setting enabled OmniSharp may load fewer projects and may thus display
-      -- incomplete reference lists for symbols.
-      LoadProjectsOnDemand = false,
-    },
-    RoslynExtensionsOptions = {
-      -- Enables support for roslyn analyzers, code fixes and rulesets.
-      EnableAnalyzersSupport = true,
-      -- Enables support for showing unimported types and unimported extension
-      -- methods in completion lists. When committed, the appropriate using
-      -- directive will be added at the top of the current file. This option can
-      -- have a negative impact on initial completion responsiveness,
-      -- particularly for the first few completion sessions after opening a
-      -- solution.
-      EnableImportCompletion = true,
-      -- Only run analyzers against open files when 'enableRoslynAnalyzers' is
-      -- true
-      AnalyzeOpenDocumentsOnly = false,
-    },
-    Sdk = {
-      -- Specifies whether to include preview versions of the .NET SDK when
-      -- determining which version to use for project loading.
-      IncludePrereleases = true,
-    },
-  },
-  -- C#-specific on_attach
-  on_attach = function(client, bufnr)
-    -- Enable semantic tokens for better syntax highlighting
-    if client.server_capabilities.semanticTokensProvider then
-      vim.lsp.semantic_tokens.start(bufnr, client.id)
-    end
-  end,
-})
 
       -- Lua LS for Neovim configuration
       lspconfig.lua_ls.setup({
@@ -662,3 +574,4 @@ lspconfig.omnisharp.setup({
     end,
   },
 }
+

@@ -28,17 +28,17 @@ return {
         layouts = {
           {
             elements = {
-              { id = "scopes", size = 0.33 },
+              { id = "scopes",      size = 0.33 },
               { id = "breakpoints", size = 0.17 },
-              { id = "stacks", size = 0.25 },
-              { id = "watches", size = 0.25 },
+              { id = "stacks",      size = 0.25 },
+              { id = "watches",     size = 0.25 },
             },
             size = 0.33,
             position = "right",
           },
           {
             elements = {
-              { id = "repl", size = 0.45 },
+              { id = "repl",    size = 0.45 },
               { id = "console", size = 0.55 },
             },
             size = 0.27,
@@ -78,30 +78,30 @@ return {
       }
 
       -- C# debugger adapter (netcoredbg)
-dap.adapters.coreclr = {
-  type = "executable",
-  command = vim.fn.stdpath("data") .. "/mason/bin/netcoredbg",
-  args = { "--interpreter=vscode" },
-}
+      dap.adapters.coreclr = {
+        type = "executable",
+        command = vim.fn.stdpath("data") .. "/mason/bin/netcoredbg",
+        args = { "--interpreter=vscode" },
+      }
 
--- Alternative adapter for newer setups (if netcoredbg doesn't work)
-dap.adapters.dotnet = {
-  type = "executable", 
-  command = vim.fn.stdpath("data") .. "/mason/bin/netcoredbg",
-  args = { "--interpreter=vscode" },
-}
+      -- Alternative adapter for newer setups (if netcoredbg doesn't work)
+      dap.adapters.dotnet = {
+        type = "executable",
+        command = vim.fn.stdpath("data") .. "/mason/bin/netcoredbg",
+        args = { "--interpreter=vscode" },
+      }
 
       -- Function to automatically find Rust executable
       local function get_rust_executable()
         local cwd = vim.fn.getcwd()
         local cargo_toml = cwd .. '/Cargo.toml'
-        
+
         -- Check if this is a Rust project
         if vim.fn.filereadable(cargo_toml) == 0 then
           vim.notify('Not a Rust project (no Cargo.toml found)', vim.log.levels.WARN)
           return nil
         end
-        
+
         -- Read Cargo.toml to get package name
         local package_name = nil
         for line in io.lines(cargo_toml) do
@@ -110,12 +110,12 @@ dap.adapters.dotnet = {
             break
           end
         end
-        
+
         if not package_name then
           vim.notify('Could not find package name in Cargo.toml', vim.log.levels.WARN)
           return nil
         end
-        
+
         -- Check for binary executable
         local binary_path = cwd .. '/target/debug/' .. package_name
         if vim.fn.filereadable(binary_path) == 1 then
@@ -125,7 +125,7 @@ dap.adapters.dotnet = {
             vim.notify('Binary exists but is not executable: ' .. binary_path, vim.log.levels.WARN)
           end
         end
-        
+
         -- Check for release build (macOS common)
         local release_path = cwd .. '/target/release/' .. package_name
         if vim.fn.filereadable(release_path) == 1 then
@@ -133,7 +133,7 @@ dap.adapters.dotnet = {
             return release_path
           end
         end
-        
+
         vim.notify('No executable found. Try running: cargo build', vim.log.levels.WARN)
         return nil
       end
@@ -144,20 +144,20 @@ dap.adapters.dotnet = {
         local venv_paths = {
           vim.fn.getcwd() .. "/.venv/bin/python3",
           vim.fn.getcwd() .. "/.venv/bin/python",
-          vim.fn.getcwd() .. "/venv/bin/python3", 
+          vim.fn.getcwd() .. "/venv/bin/python3",
           vim.fn.getcwd() .. "/venv/bin/python",
           vim.fn.getcwd() .. "/env/bin/python3",
           vim.fn.getcwd() .. "/env/bin/python",
           vim.fn.expand("~/.virtualenvs/" .. vim.fn.fnamemodify(vim.fn.getcwd(), ":t") .. "/bin/python3"),
           vim.fn.expand("~/.virtualenvs/" .. vim.fn.fnamemodify(vim.fn.getcwd(), ":t") .. "/bin/python"),
         }
-        
+
         for _, python_path in ipairs(venv_paths) do
           if vim.fn.executable(python_path) == 1 then
             return python_path
           end
         end
-        
+
         -- Default to system python3, then python
         if vim.fn.executable("python3") == 1 then
           return "python3"
@@ -165,187 +165,187 @@ dap.adapters.dotnet = {
           return "python"
         else
           vim.notify("Neither 'python3' nor 'python' found in PATH", vim.log.levels.WARN)
-          return "python3"  -- fallback
+          return "python3" -- fallback
         end
       end
 
       -- Helper function to find C# executable and project info
-local function get_csharp_debug_info()
-  local cwd = vim.fn.getcwd()
-  
-  -- Check if dotnet is available
-  if vim.fn.executable("dotnet") == 0 then
-    vim.notify("dotnet CLI not found in PATH", vim.log.levels.ERROR)
-    return nil
-  end
-  
-  -- Find .csproj or .sln files
-  local sln_files = vim.fn.glob(cwd .. "/*.sln", false, true)
-  local csproj_files = vim.fn.glob(cwd .. "/**/*.csproj", false, true)
-  
-  local project_file = nil
-  local project_name = nil
-  local project_dir = cwd
-  
-  if #sln_files > 0 then
-    -- For solution files, we need to find the startup project
-    project_file = sln_files[1]
-    project_name = vim.fn.fnamemodify(project_file, ":t:r")
-    
-    -- Try to find a console app or web app in the solution
-    for _, csproj in ipairs(csproj_files) do
-      local content = vim.fn.readfile(csproj)
-      for _, line in ipairs(content) do
-        if line:match("Exe") or line:match("Microsoft%.AspNetCore%.App") then
-          project_file = csproj
-          project_name = vim.fn.fnamemodify(csproj, ":t:r")
-          project_dir = vim.fn.fnamemodify(csproj, ":h")
-          break
-        end
-      end
-    end
-  elseif #csproj_files > 0 then
-    project_file = csproj_files[1]
-    project_name = vim.fn.fnamemodify(project_file, ":t:r")
-    project_dir = vim.fn.fnamemodify(project_file, ":h")
-  else
-    vim.notify("No .sln or .csproj files found", vim.log.levels.WARN)
-    return nil
-  end
-  
-  -- Determine the output directory and executable
-  local debug_dir = project_dir .. "/bin/Debug"
-  local possible_dlls = vim.fn.glob(debug_dir .. "/**/" .. project_name .. ".dll", false, true)
-  
-  local dll_path = nil
-  if #possible_dlls > 0 then
-    -- Use the most recent one (likely the correct target framework)
-    table.sort(possible_dlls, function(a, b)
-      return vim.fn.getftime(a) > vim.fn.getftime(b)
-    end)
-    dll_path = possible_dlls[1]
-  end
-  
-  return {
-    project_file = project_file,
-    project_name = project_name,
-    project_dir = project_dir,
-    dll_path = dll_path,
-    cwd = cwd
-  }
-end
+      local function get_csharp_debug_info()
+        local cwd = vim.fn.getcwd()
 
-local function build_csharp_project(project_info, callback)
-  if not project_info then
-    vim.notify("No C# project found", vim.log.levels.ERROR)
-    return
-  end
-  
-  vim.notify("Building C# project: " .. project_info.project_name, vim.log.levels.INFO)
-  
-  vim.fn.jobstart({"dotnet", "build", project_info.project_file, "--configuration", "Debug"}, {
-    cwd = project_info.project_dir,
-    on_exit = function(_, code)
-      if code == 0 then
-        vim.notify("Build successful!", vim.log.levels.INFO)
-        if callback then
-          callback(true)
+        -- Check if dotnet is available
+        if vim.fn.executable("dotnet") == 0 then
+          vim.notify("dotnet CLI not found in PATH", vim.log.levels.ERROR)
+          return nil
         end
-      else
-        vim.notify("Build failed with exit code: " .. code, vim.log.levels.ERROR)
-        if callback then
-          callback(false)
-        end
-      end
-    end,
-    on_stdout = function(_, data)
-      if data then
-        for _, line in ipairs(data) do
-          if line and line ~= "" then
-            vim.notify("Build: " .. line, vim.log.levels.INFO)
+
+        -- Find .csproj or .sln files
+        local sln_files = vim.fn.glob(cwd .. "/*.sln", false, true)
+        local csproj_files = vim.fn.glob(cwd .. "/**/*.csproj", false, true)
+
+        local project_file = nil
+        local project_name = nil
+        local project_dir = cwd
+
+        if #sln_files > 0 then
+          -- For solution files, we need to find the startup project
+          project_file = sln_files[1]
+          project_name = vim.fn.fnamemodify(project_file, ":t:r")
+
+          -- Try to find a console app or web app in the solution
+          for _, csproj in ipairs(csproj_files) do
+            local content = vim.fn.readfile(csproj)
+            for _, line in ipairs(content) do
+              if line:match("Exe") or line:match("Microsoft%.AspNetCore%.App") then
+                project_file = csproj
+                project_name = vim.fn.fnamemodify(csproj, ":t:r")
+                project_dir = vim.fn.fnamemodify(csproj, ":h")
+                break
+              end
+            end
           end
+        elseif #csproj_files > 0 then
+          project_file = csproj_files[1]
+          project_name = vim.fn.fnamemodify(project_file, ":t:r")
+          project_dir = vim.fn.fnamemodify(project_file, ":h")
+        else
+          vim.notify("No .sln or .csproj files found", vim.log.levels.WARN)
+          return nil
         end
+
+        -- Determine the output directory and executable
+        local debug_dir = project_dir .. "/bin/Debug"
+        local possible_dlls = vim.fn.glob(debug_dir .. "/**/" .. project_name .. ".dll", false, true)
+
+        local dll_path = nil
+        if #possible_dlls > 0 then
+          -- Use the most recent one (likely the correct target framework)
+          table.sort(possible_dlls, function(a, b)
+            return vim.fn.getftime(a) > vim.fn.getftime(b)
+          end)
+          dll_path = possible_dlls[1]
+        end
+
+        return {
+          project_file = project_file,
+          project_name = project_name,
+          project_dir = project_dir,
+          dll_path = dll_path,
+          cwd = cwd
+        }
       end
-    end,
-    on_stderr = function(_, data) 
-      if data then
-        for _, line in ipairs(data) do
-          if line and line ~= "" then
-            vim.notify("Build Error: " .. line, vim.log.levels.ERROR)
+
+      local function build_csharp_project(project_info, callback)
+        if not project_info then
+          vim.notify("No C# project found", vim.log.levels.ERROR)
+          return
+        end
+
+        vim.notify("Building C# project: " .. project_info.project_name, vim.log.levels.INFO)
+
+        vim.fn.jobstart({ "dotnet", "build", project_info.project_file, "--configuration", "Debug" }, {
+          cwd = project_info.project_dir,
+          on_exit = function(_, code)
+            if code == 0 then
+              vim.notify("Build successful!", vim.log.levels.INFO)
+              if callback then
+                callback(true)
+              end
+            else
+              vim.notify("Build failed with exit code: " .. code, vim.log.levels.ERROR)
+              if callback then
+                callback(false)
+              end
+            end
+          end,
+          on_stdout = function(_, data)
+            if data then
+              for _, line in ipairs(data) do
+                if line and line ~= "" then
+                  vim.notify("Build: " .. line, vim.log.levels.INFO)
+                end
+              end
+            end
+          end,
+          on_stderr = function(_, data)
+            if data then
+              for _, line in ipairs(data) do
+                if line and line ~= "" then
+                  vim.notify("Build Error: " .. line, vim.log.levels.ERROR)
+                end
+              end
+            end
           end
-        end
+        })
       end
-    end
-  })
-end
 
--- C# debugging configurations
-dap.configurations.cs = {
-  {
-    type = "coreclr",
-    name = "Launch C# Application",
-    request = "launch",
-    program = function()
-      local project_info = get_csharp_debug_info()
-      if not project_info then
-        return vim.fn.input("Path to dll: ", vim.fn.getcwd() .. "/bin/Debug/", "file")
-      end
-      
-      -- If we have a dll path from build output, use it
-      if project_info.dll_path and vim.fn.filereadable(project_info.dll_path) == 1 then
-        return project_info.dll_path
-      end
-      
-      -- Otherwise, try to find it in common locations
-      local debug_dir = project_info.project_dir .. "/bin/Debug"
-      local possible_dlls = vim.fn.glob(debug_dir .. "/**/" .. project_info.project_name .. ".dll", false, true)
-      
-      if #possible_dlls > 0 then
-        return possible_dlls[1]
-      end
-      
-      -- Fallback to user input
-      return vim.fn.input("Path to dll: ", debug_dir .. "/", "file")
-    end,
-    cwd = "${workspaceFolder}",
-    console = "integratedTerminal",
-    args = {},
-  },
-  {
-    type = "coreclr",
-    name = "Attach to Process",
-    request = "attach",
-    processId = function()
-      return require('dap.utils').pick_process({
-        filter = function(proc)
-          return proc.name:find('dotnet') or proc.name:find('.exe')
-        end
-      })
-    end,
-  },
-  {
-    type = "coreclr", 
-    name = "Launch ASP.NET Core",
-    request = "launch",
-    program = function()
-      local project_info = get_csharp_debug_info()
-      if project_info and project_info.dll_path then
-        return project_info.dll_path
-      end
-      return vim.fn.input("Path to dll: ", vim.fn.getcwd() .. "/bin/Debug/", "file")
-    end,
-    cwd = "${workspaceFolder}",
-    console = "integratedTerminal",
-    env = {
-      ASPNETCORE_ENVIRONMENT = "Development",
-      ASPNETCORE_URLS = "https://localhost:5001;http://localhost:5000"
-    },
-    args = {},
-  },
-}
+      -- C# debugging configurations
+      dap.configurations.cs = {
+        {
+          type = "coreclr",
+          name = "Launch C# Application",
+          request = "launch",
+          program = function()
+            local project_info = get_csharp_debug_info()
+            if not project_info then
+              return vim.fn.input("Path to dll: ", vim.fn.getcwd() .. "/bin/Debug/", "file")
+            end
 
--- Also support .csharp extension (some projects use this)
-dap.configurations.csharp = dap.configurations.cs
+            -- If we have a dll path from build output, use it
+            if project_info.dll_path and vim.fn.filereadable(project_info.dll_path) == 1 then
+              return project_info.dll_path
+            end
+
+            -- Otherwise, try to find it in common locations
+            local debug_dir = project_info.project_dir .. "/bin/Debug"
+            local possible_dlls = vim.fn.glob(debug_dir .. "/**/" .. project_info.project_name .. ".dll", false, true)
+
+            if #possible_dlls > 0 then
+              return possible_dlls[1]
+            end
+
+            -- Fallback to user input
+            return vim.fn.input("Path to dll: ", debug_dir .. "/", "file")
+          end,
+          cwd = "${workspaceFolder}",
+          console = "integratedTerminal",
+          args = {},
+        },
+        {
+          type = "coreclr",
+          name = "Attach to Process",
+          request = "attach",
+          processId = function()
+            return require('dap.utils').pick_process({
+              filter = function(proc)
+                return proc.name:find('dotnet') or proc.name:find('.exe')
+              end
+            })
+          end,
+        },
+        {
+          type = "coreclr",
+          name = "Launch ASP.NET Core",
+          request = "launch",
+          program = function()
+            local project_info = get_csharp_debug_info()
+            if project_info and project_info.dll_path then
+              return project_info.dll_path
+            end
+            return vim.fn.input("Path to dll: ", vim.fn.getcwd() .. "/bin/Debug/", "file")
+          end,
+          cwd = "${workspaceFolder}",
+          console = "integratedTerminal",
+          env = {
+            ASPNETCORE_ENVIRONMENT = "Development",
+            ASPNETCORE_URLS = "https://localhost:5001;http://localhost:5000"
+          },
+          args = {},
+        },
+      }
+
+      -- Also support .csharp extension (some projects use this)
+      dap.configurations.csharp = dap.configurations.cs
 
       -- Rust debugging configurations
       dap.configurations.rust = {
@@ -380,7 +380,7 @@ dap.configurations.csharp = dap.configurations.cs
         },
         {
           type = "python",
-          request = "launch", 
+          request = "launch",
           name = "Launch Python Module",
           module = function()
             return vim.fn.input("Module name: ")
@@ -424,70 +424,70 @@ dap.configurations.csharp = dap.configurations.cs
       local function launch_debugger()
         local filetype = vim.bo.filetype
         local dap = require('dap')
-        
+
         if filetype == 'rust' then
-            vim.notify('Building Rust project...', vim.log.levels.INFO)
-            vim.fn.jobstart({'cargo', 'build'}, {
-              on_exit = function(_, code)
-                if code == 0 then
-                  vim.notify('Build successful! Launching debugger...', vim.log.levels.INFO)
-                  vim.schedule(function()
-                    local exe = get_rust_executable()
-                    if exe then
-                        dap.run({
-                            name = "Launch Rust Binary",
-                            type = "codelldb",
-                            request = "launch",
-                            program = exe,
-                            cwd = '${workspaceFolder}',
-                            stopOnEntry = false,
-                            args = {},
-                        })
-                    else
-                        vim.notify('No Rust executable found after build.', vim.log.levels.ERROR)
-                    end
-                  end)
-                else
-                  vim.notify('Build failed! Check errors and try again.', vim.log.levels.ERROR)
-                end
+          vim.notify('Building Rust project...', vim.log.levels.INFO)
+          vim.fn.jobstart({ 'cargo', 'build' }, {
+            on_exit = function(_, code)
+              if code == 0 then
+                vim.notify('Build successful! Launching debugger...', vim.log.levels.INFO)
+                vim.schedule(function()
+                  local exe = get_rust_executable()
+                  if exe then
+                    dap.run({
+                      name = "Launch Rust Binary",
+                      type = "codelldb",
+                      request = "launch",
+                      program = exe,
+                      cwd = '${workspaceFolder}',
+                      stopOnEntry = false,
+                      args = {},
+                    })
+                  else
+                    vim.notify('No Rust executable found after build.', vim.log.levels.ERROR)
+                  end
+                end)
+              else
+                vim.notify('Build failed! Check errors and try again.', vim.log.levels.ERROR)
               end
-            })
-        elseif filetype == 'python' then
-            vim.notify('Launching Python debugger...', vim.log.levels.INFO)
-            -- Use the first Python configuration (Launch Python File)
-            dap.run(dap.configurations.python[1])
-          elseif filetype == 'cs' or filetype == 'csharp' then
-            local project_info = get_csharp_debug_info()
-            if not project_info then
-                vim.notify('No C# project found in workspace', vim.log.levels.ERROR)
-                return
             end
-            
-            vim.notify('Building and launching C# debugger...', vim.log.levels.INFO)
-            build_csharp_project(project_info, function(success)
-                if success then
-                    vim.schedule(function()
-                        -- Refresh project info to get updated dll path
-                        local updated_info = get_csharp_debug_info()
-                        if updated_info and updated_info.dll_path and vim.fn.filereadable(updated_info.dll_path) == 1 then
-                            dap.run({
-                                type = "coreclr",
-                                name = "Launch C# Application",
-                                request = "launch",
-                                program = updated_info.dll_path,
-                                cwd = updated_info.project_dir,
-                                console = "integratedTerminal",
-                                args = {},
-                            })
-                        else
-                            vim.notify('Built successfully but could not find executable', vim.log.levels.ERROR)
-                        end
-                    end)
+          })
+        elseif filetype == 'python' then
+          vim.notify('Launching Python debugger...', vim.log.levels.INFO)
+          -- Use the first Python configuration (Launch Python File)
+          dap.run(dap.configurations.python[1])
+        elseif filetype == 'cs' or filetype == 'csharp' then
+          local project_info = get_csharp_debug_info()
+          if not project_info then
+            vim.notify('No C# project found in workspace', vim.log.levels.ERROR)
+            return
+          end
+
+          vim.notify('Building and launching C# debugger...', vim.log.levels.INFO)
+          build_csharp_project(project_info, function(success)
+            if success then
+              vim.schedule(function()
+                -- Refresh project info to get updated dll path
+                local updated_info = get_csharp_debug_info()
+                if updated_info and updated_info.dll_path and vim.fn.filereadable(updated_info.dll_path) == 1 then
+                  dap.run({
+                    type = "coreclr",
+                    name = "Launch C# Application",
+                    request = "launch",
+                    program = updated_info.dll_path,
+                    cwd = updated_info.project_dir,
+                    console = "integratedTerminal",
+                    args = {},
+                  })
+                else
+                  vim.notify('Built successfully but could not find executable', vim.log.levels.ERROR)
                 end
-            end)
+              end)
+            end
+          end)
         else
-            vim.notify('No automatic debug configuration for ' .. filetype, vim.log.levels.INFO)
-            dap.continue() -- Fallback to continue if not Rust or Python
+          vim.notify('No automatic debug configuration for ' .. filetype, vim.log.levels.INFO)
+          dap.continue() -- Fallback to continue if not Rust or Python
         end
       end
 
@@ -544,14 +544,14 @@ dap.configurations.csharp = dap.configurations.cs
         end
       end
 
-      -- Check and install C# debugger if not present  
-local function check_and_install_csharp_debug()
-  local netcoredbg_path = vim.fn.stdpath("data") .. "/mason/bin/netcoredbg"
-  if vim.fn.executable(netcoredbg_path) == 0 then
-    vim.notify("netcoredbg not found. Installing via Mason...", vim.log.levels.WARN)
-    vim.cmd("MasonInstall netcoredbg")
-  end
-end
+      -- Check and install C# debugger if not present
+      local function check_and_install_csharp_debug()
+        local netcoredbg_path = vim.fn.stdpath("data") .. "/mason/bin/netcoredbg"
+        if vim.fn.executable(netcoredbg_path) == 0 then
+          vim.notify("netcoredbg not found. Installing via Mason...", vim.log.levels.WARN)
+          vim.cmd("MasonInstall netcoredbg")
+        end
+      end
 
       -- Auto-install debuggers when opening relevant files
       vim.api.nvim_create_autocmd("BufReadPost", {
@@ -568,7 +568,7 @@ end
           end
         end,
       })
-
     end,
   },
 }
+
