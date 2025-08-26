@@ -278,8 +278,7 @@ return {
           end
         })
       end
-
-      -- C# debugging configurations
+      -- macOS-optimized C# debugging configurations
       dap.configurations.cs = {
         {
           type = "coreclr",
@@ -291,25 +290,44 @@ return {
               return vim.fn.input("Path to dll: ", vim.fn.getcwd() .. "/bin/Debug/", "file")
             end
 
-            -- If we have a dll path from build output, use it
+            -- On macOS, prefer DLL path with netcoredbg, but handle CodeLLDB differently
             if project_info.dll_path and vim.fn.filereadable(project_info.dll_path) == 1 then
+              vim.notify("Found DLL: " .. project_info.dll_path, vim.log.levels.INFO)
               return project_info.dll_path
             end
 
-            -- Otherwise, try to find it in common locations
             local debug_dir = project_info.project_dir .. "/bin/Debug"
             local possible_dlls = vim.fn.glob(debug_dir .. "/**/" .. project_info.project_name .. ".dll", false, true)
 
             if #possible_dlls > 0 then
+              table.sort(possible_dlls, function(a, b)
+                return vim.fn.getftime(a) > vim.fn.getftime(b)
+              end)
               return possible_dlls[1]
             end
 
-            -- Fallback to user input
             return vim.fn.input("Path to dll: ", debug_dir .. "/", "file")
           end,
           cwd = "${workspaceFolder}",
           console = "integratedTerminal",
           args = {},
+          stopAtEntry = false,
+        },
+        {
+          type = "coreclr",
+          name = "Launch with dotnet run (Recommended for macOS)",
+          request = "launch",
+          program = "dotnet",
+          args = function()
+            local project_info = get_csharp_debug_info()
+            if project_info and project_info.project_file then
+              return { "run", "--project", project_info.project_file, "--configuration", "Debug", "--no-build" }
+            end
+            return { "run", "--configuration", "Debug" }
+          end,
+          cwd = "${workspaceFolder}",
+          console = "integratedTerminal",
+          stopAtEntry = false,
         },
         {
           type = "coreclr",
@@ -318,7 +336,7 @@ return {
           processId = function()
             return require('dap.utils').pick_process({
               filter = function(proc)
-                return proc.name:find('dotnet') or proc.name:find('.exe')
+                return proc.name:find('dotnet') or proc.name:find(vim.fn.fnamemodify(vim.fn.getcwd(), ":t"))
               end
             })
           end,
@@ -327,12 +345,13 @@ return {
           type = "coreclr",
           name = "Launch ASP.NET Core",
           request = "launch",
-          program = function()
+          program = "dotnet",
+          args = function()
             local project_info = get_csharp_debug_info()
-            if project_info and project_info.dll_path then
-              return project_info.dll_path
+            if project_info and project_info.project_file then
+              return { "run", "--project", project_info.project_file, "--configuration", "Debug", "--no-build" }
             end
-            return vim.fn.input("Path to dll: ", vim.fn.getcwd() .. "/bin/Debug/", "file")
+            return { "run", "--configuration", "Debug" }
           end,
           cwd = "${workspaceFolder}",
           console = "integratedTerminal",
@@ -340,7 +359,7 @@ return {
             ASPNETCORE_ENVIRONMENT = "Development",
             ASPNETCORE_URLS = "https://localhost:5001;http://localhost:5000"
           },
-          args = {},
+          stopAtEntry = false,
         },
       }
 
@@ -572,4 +591,3 @@ return {
     end,
   },
 }
-
