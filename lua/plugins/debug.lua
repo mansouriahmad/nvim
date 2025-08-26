@@ -6,6 +6,7 @@ return {
       "williamboman/mason.nvim",
       "nvim-neotest/nvim-nio",
       "Weissle/persistent-breakpoints.nvim",
+      "mfussenegger/nvim-dap-python",
     },
     config = function()
       local dap = require("dap")
@@ -66,6 +67,11 @@ return {
           command = vim.fn.stdpath("data") .. "/mason/bin/codelldb",
           args = { "--port", "${port}" },
         },
+      }
+
+      dap.adapters.python = {
+        type = "executable",
+        command = vim.fn.stdpath("data") .. "/mason/bin/debugpy-adapter",
       }
 
       -- Function to automatically find Rust executable
@@ -135,42 +141,133 @@ return {
         },
       }
 
-      -- Function to launch debugger based on filetype (for F5)
-      local function launch_debugger()
-          local filetype = vim.bo.filetype
-          local dap = require('dap')
-          if filetype == 'rust' then
-              vim.notify('Building Rust project...', vim.log.levels.INFO)
-              vim.fn.jobstart({'cargo', 'build'}, {
-                on_exit = function(_, code)
-                  if code == 0 then
-                    vim.notify('Build successful! Launching debugger...', vim.log.levels.INFO)
-                    vim.schedule(function()
-                      local exe = get_rust_executable()
-                      if exe then
-                          dap.run({
-                              name = "Launch Rust Binary",
-                              type = "codelldb",
-                              request = "launch",
-                              program = exe,
-                              cwd = '${workspaceFolder}',
-                              stopOnEntry = false,
-                              args = {},
-                          })
-                      else
-                          vim.notify('No Rust executable found after build.', vim.log.levels.ERROR)
-                      end
-                    end)
-                  else
-                    vim.notify('Build failed! Check errors and try again.', vim.log.levels.ERROR)
-                  end
-                end
-              })
-          else
-              vim.notify('No automatic debug configuration for ' .. filetype, vim.log.levels.INFO)
-              dap.continue() -- Fallback to continue if not Rust
+
+
+-- Python debugging configurations
+dap.configurations.python = {
+  {
+    type = "python",
+    request = "launch",
+    name = "Launch Python File",
+    program = "${file}",
+    pythonPath = get_python_path,
+    console = "integratedTerminal",
+    args = {},
+  },
+  {
+    type = "python",
+    request = "launch", 
+    name = "Launch Python Module",
+    module = function()
+      return vim.fn.input("Module name: ")
+    end,
+    pythonPath = get_python_path,
+    console = "integratedTerminal",
+  },
+  {
+    type = "python",
+    request = "launch",
+    name = "Debug Django",
+    program = vim.fn.getcwd() .. "/manage.py",
+    args = { "runserver", "--noreload" },
+    pythonPath = get_python_path,
+    console = "integratedTerminal",
+  },
+  {
+    type = "python",
+    request = "launch",
+    name = "Debug Flask",
+    program = "${file}",
+    env = {
+      FLASK_ENV = "development",
+      FLASK_DEBUG = "1",
+    },
+    pythonPath = get_python_path,
+    console = "integratedTerminal",
+  },
+  {
+    type = "python",
+    request = "launch",
+    name = "Debug pytest",
+    module = "pytest",
+    args = { "${file}" },
+    pythonPath = get_python_path,
+    console = "integratedTerminal",
+  },
+}
+      -- Helper function to get the correct Python path
+      local function get_python_path()
+        -- Try to detect virtual environment first
+        local venv_paths = {
+          vim.fn.getcwd() .. "/.venv/bin/python3",
+          vim.fn.getcwd() .. "/.venv/bin/python",
+          vim.fn.getcwd() .. "/venv/bin/python3", 
+          vim.fn.getcwd() .. "/venv/bin/python",
+          vim.fn.getcwd() .. "/env/bin/python3",
+          vim.fn.getcwd() .. "/env/bin/python",
+          vim.fn.expand("~/.virtualenvs/" .. vim.fn.fnamemodify(vim.fn.getcwd(), ":t") .. "/bin/python3"),
+          vim.fn.expand("~/.virtualenvs/" .. vim.fn.fnamemodify(vim.fn.getcwd(), ":t") .. "/bin/python"),
+        }
+        
+        for _, python_path in ipairs(venv_paths) do
+          if vim.fn.executable(python_path) == 1 then
+            return python_path
           end
+        end
+        
+        -- Default to system python3, then python
+        if vim.fn.executable("python3") == 1 then
+          return "python3"
+        elseif vim.fn.executable("python") == 1 then
+          return "python"
+        else
+          vim.notify("Neither 'python3' nor 'python' found in PATH", vim.log.levels.WARN)
+          return "python3"  -- fallback
+        end
       end
+
+      -- Function to launch debugger based on filetype (for F5)
+-- Function to launch debugger based on filetype (for F5)
+local function launch_debugger()
+  local filetype = vim.bo.filetype
+  local dap = require('dap')
+  
+  if filetype == 'rust' then
+      vim.notify('Building Rust project...', vim.log.levels.INFO)
+      vim.fn.jobstart({'cargo', 'build'}, {
+        on_exit = function(_, code)
+          if code == 0 then
+            vim.notify('Build successful! Launching debugger...', vim.log.levels.INFO)
+            vim.schedule(function()
+              local exe = get_rust_executable()
+              if exe then
+                  dap.run({
+                      name = "Launch Rust Binary",
+                      type = "codelldb",
+                      request = "launch",
+                      program = exe,
+                      cwd = '${workspaceFolder}',
+                      stopOnEntry = false,
+                      args = {},
+                  })
+              else
+                  vim.notify('No Rust executable found after build.', vim.log.levels.ERROR)
+              end
+            end)
+          else
+            vim.notify('Build failed! Check errors and try again.', vim.log.levels.ERROR)
+          end
+        end
+      })
+  elseif filetype == 'python' then
+      vim.notify('Launching Python debugger...', vim.log.levels.INFO)
+      -- Use the first Python configuration (Launch Python File)
+      dap.run(dap.configurations.python[1])
+  else
+      vim.notify('No automatic debug configuration for ' .. filetype, vim.log.levels.INFO)
+      dap.continue() -- Fallback to continue if not Rust or Python
+  end
+end
 
       -- FIXED: Better terminate function that ensures proper cleanup
       local function terminate_dap()
@@ -182,20 +279,15 @@ return {
       end
 
       -- Keymaps with FIXED terminate functionality
-      vim.keymap.set("n", "<leader>db", dap.toggle_breakpoint, { desc = "Toggle Breakpoint" })
+      vim.keymap.set("n", "<F7>", dap.toggle_breakpoint, { desc = "Toggle Breakpoint" })
       vim.keymap.set("n", "<F5>", launch_debugger, { desc = "Launch/Continue Debugging (Auto-Build & Auto-Detect Rust)" })
-      vim.keymap.set("n", "<F6>", dap.step_into, { desc = "Step Into" })
-      vim.keymap.set("n", "<F7>", dap.step_over, { desc = "Step Over" })
-      vim.keymap.set("n", "<F8>", dap.step_out, { desc = "Step Out" })  -- Changed from S-F6 to F8
+      vim.keymap.set("n", "<F1>", dap.step_into, { desc = "Step Into" })
+      vim.keymap.set("n", "<F8>", dap.step_over, { desc = "Step Over" })
+      vim.keymap.set("n", "<F2>", dap.step_out, { desc = "Step Out" })  -- Changed from S-F6 to F8
       
       -- FIXED: Multiple options for terminating debug session
-      vim.keymap.set("n", "<F9>", terminate_dap, { desc = "Stop Debugging" })  -- F9 as primary stop
-      vim.keymap.set("n", "<leader>ds", terminate_dap, { desc = "Stop/Terminate Debugging" })  -- Leader key alternative
+      vim.keymap.set("n", "<F6>", terminate_dap, { desc = "Stop Debugging" })  -- F9 as primary stop
       vim.keymap.set("n", "<leader>dt", terminate_dap, { desc = "Terminate Debug Session" })  -- Another alternative
-      
-      -- Try these if your terminal supports them
-      vim.keymap.set("n", "<S-F5>", terminate_dap, { desc = "Stop Debugging (Shift-F5)" })
-      vim.keymap.set("n", "<F17>", terminate_dap, { desc = "Stop Debugging (F17=Shift-F5)" })  -- Some terminals send F17 for Shift-F5
       
       vim.keymap.set("n", "<leader>dr", dap.repl.toggle, { desc = "Toggle REPL" })
       vim.keymap.set("n", "<leader>du", dapui.toggle, { desc = "Toggle DAP UI" })
@@ -217,11 +309,26 @@ return {
         end
       end
 
+      -- Check and install Python debugger if not present
+      local function check_and_install_python_debug()
+        local debugpy_path = vim.fn.stdpath("data") .. "/mason/bin/debugpy-adapter"
+        if vim.fn.executable(debugpy_path) == 0 then
+          vim.notify("debugpy not found. Installing via Mason...", vim.log.levels.WARN)
+          vim.cmd("MasonInstall debugpy")
+        end
+      end
+
+      -- 6. UPDATE THE AUTOCMD (add Python pattern, around line 230)
       vim.api.nvim_create_autocmd("BufReadPost", {
-        group = vim.api.nvim_create_augroup("DapRustSetup", { clear = true }),
-        pattern = { "*.rs" },
+        group = vim.api.nvim_create_augroup("DapSetup", { clear = true }),
+        pattern = { "*.rs", "*.py" }, -- Add Python files
         callback = function()
-          check_and_install_codelldb()
+          local filetype = vim.bo.filetype
+          if filetype == "rust" then
+            check_and_install_codelldb()
+          elseif filetype == "python" then
+            check_and_install_python_debug()
+          end
         end,
       })
 

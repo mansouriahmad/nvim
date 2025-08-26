@@ -26,12 +26,14 @@ return {
     config = function()
       require("mason-lspconfig").setup({
         ensure_installed = {
-          "rust_analyzer",  -- Rust
+          "rust_analyzer", -- Rust
           "lua_ls",        -- Lua for Neovim config
           "taplo",         -- TOML files (Cargo.toml)
           "yamlls",        -- YAML
           "jsonls",        -- JSON
           "bashls",        -- Shell scripts
+          "pyright",
+          "ruff",
         },
         automatic_installation = true,
       })
@@ -51,7 +53,7 @@ return {
     config = function()
       local lspconfig = require("lspconfig")
       local configs = require("configs")
-      
+
       -- Diagnostic configuration
       vim.diagnostic.config({
         virtual_text = {
@@ -64,7 +66,7 @@ return {
         },
         signs = true,
         underline = true,
-        update_in_insert = true,  -- CHANGED: This enables diagnostics while typing
+        update_in_insert = true, -- CHANGED: This enables diagnostics while typing
         severity_sort = true,
       })
 
@@ -89,7 +91,7 @@ return {
         callback = function(ev)
           local bufnr = ev.buf
           local client = vim.lsp.get_client_by_id(ev.data.client_id)
-          
+
           -- Enable completion triggered by <c-x><c-o>
           vim.bo[bufnr].omnifunc = "v:lua.vim.lsp.omnifunc"
 
@@ -105,25 +107,25 @@ return {
           vim.keymap.set("n", "gi", vim.lsp.buf.implementation, desc_opts("Go to implementation"))
           vim.keymap.set("n", "gr", vim.lsp.buf.references, desc_opts("Go to references"))
           vim.keymap.set("n", "gt", vim.lsp.buf.type_definition, desc_opts("Go to type definition"))
-          
+
           -- Documentation
           vim.keymap.set("n", "K", vim.lsp.buf.hover, desc_opts("Hover documentation"))
           vim.keymap.set("n", "<leader>gs", vim.lsp.buf.signature_help, desc_opts("Signature help"))
-          
+
           -- Workspace
           vim.keymap.set("n", "<leader>wa", vim.lsp.buf.add_workspace_folder, desc_opts("Add workspace folder"))
           vim.keymap.set("n", "<leader>wr", vim.lsp.buf.remove_workspace_folder, desc_opts("Remove workspace folder"))
           vim.keymap.set("n", "<leader>wl", function()
             print(vim.inspect(vim.lsp.buf.list_workspace_folders()))
           end, desc_opts("List workspace folders"))
-          
+
           -- Actions
           vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, desc_opts("Rename symbol"))
           vim.keymap.set({ "n", "v" }, "<leader>ca", vim.lsp.buf.code_action, desc_opts("Code action"))
           vim.keymap.set("n", "<leader>cf", function()
             vim.lsp.buf.format({ async = true })
           end, desc_opts("Format buffer"))
-          
+
           -- Diagnostics
           vim.keymap.set("n", "[d", vim.diagnostic.goto_prev, desc_opts("Previous diagnostic"))
           vim.keymap.set("n", "]d", vim.diagnostic.goto_next, desc_opts("Next diagnostic"))
@@ -135,19 +137,45 @@ return {
             vim.keymap.set("n", "<leader>rc", function()
               vim.cmd("!cargo check")
             end, desc_opts("Cargo check"))
-            
+
             vim.keymap.set("n", "<leader>rt", function()
               vim.cmd("!cargo test")
             end, desc_opts("Cargo test"))
-            
+
             vim.keymap.set("n", "<leader>rb", function()
               vim.cmd("!cargo build")
             end, desc_opts("Cargo build"))
-            
+
             vim.keymap.set("n", "<leader>rr", function()
               vim.cmd("!cargo run")
             end, desc_opts("Cargo run"))
           end
+
+          if client.name == "pyright" or client.name == "ruff" then
+            local python_cmd = get_python_command()
+            local pip_cmd = get_pip_command()
+
+            vim.keymap.set("n", "<leader>po", function()
+              vim.cmd("!" .. python_cmd .. " -m py_compile " .. vim.fn.expand("%"))
+            end, desc_opts("Python syntax check"))
+
+            vim.keymap.set("n", "<leader>pr", function()
+              vim.cmd("!" .. python_cmd .. " " .. vim.fn.expand("%"))
+            end, desc_opts("Run Python file"))
+
+            vim.keymap.set("n", "<leader>pt", function()
+              vim.cmd("!" .. python_cmd .. " -m pytest")
+            end, desc_opts("Run pytest"))
+
+            vim.keymap.set("n", "<leader>pi", function()
+              vim.cmd("!" .. pip_cmd .. " install -r requirements.txt")
+            end, desc_opts("Install requirements"))
+
+            vim.keymap.set("n", "<leader>pv", function()
+              vim.cmd("!" .. python_cmd .. " -m venv .venv")
+            end, desc_opts("Create virtual environment"))
+          end
+
 
           -- Telescope integration for LSP
           local telescope_builtin = require("telescope.builtin")
@@ -157,7 +185,7 @@ return {
           vim.keymap.set("n", "<leader>li", telescope_builtin.lsp_implementations, desc_opts("Find implementations"))
           vim.keymap.set("n", "<leader>ls", telescope_builtin.lsp_document_symbols, desc_opts("Document symbols"))
           vim.keymap.set("n", "<leader>lw", telescope_builtin.lsp_workspace_symbols, desc_opts("Workspace symbols"))
-          
+
           -- Enable inlay hints if supported (great for Rust!)
           if client.server_capabilities.inlayHintProvider then
             vim.lsp.inlay_hint.enable(true, { bufnr = bufnr })
@@ -168,10 +196,69 @@ return {
         end,
       })
 
+      -- Python Language Server (Pyright)
+      lspconfig.pyright.setup({
+        capabilities = capabilities,
+        settings = {
+          python = {
+            analysis = {
+              typeCheckingMode = "basic",   -- "off", "basic", "strict"
+              autoSearchPaths = true,
+              diagnosticMode = "workspace", -- "openFilesOnly" or "workspace"
+              useLibraryCodeForTypes = true,
+              autoImportCompletions = true,
+            },
+          },
+        },
+        -- Python-specific on_attach
+        on_attach = function(client, bufnr)
+          -- Disable Pyright's formatting in favor of Ruff
+          client.server_capabilities.documentFormattingProvider = false
+          client.server_capabilities.documentRangeFormattingProvider = false
+        end,
+      })
+
+      -- Python Linter/Formatter (Ruff) - super fast Python tooling
+      lspconfig.ruff.setup({
+        capabilities = capabilities,
+        init_options = {
+          settings = {
+            -- Ruff settings
+            args = {
+              "--line-length=88", -- Black-compatible line length
+              "--select=E,W,F,I", -- Error, Warning, pyFlakes, Import sorting
+            },
+          },
+        },
+      })
+
+      -- Helper function to get the correct Python command
+      local function get_python_command()
+        if vim.fn.executable("python3") == 1 then
+          return "python3"
+        elseif vim.fn.executable("python") == 1 then
+          return "python"
+        else
+          vim.notify("Neither 'python3' nor 'python' found in PATH", vim.log.levels.ERROR)
+          return "python3" -- fallback
+        end
+      end
+
+      -- Helper function to get the correct pip command
+      local function get_pip_command()
+        if vim.fn.executable("pip3") == 1 then
+          return "pip3"
+        elseif vim.fn.executable("pip") == 1 then
+          return "pip"
+        else
+          return "pip3" -- fallback
+        end
+      end
+
       -- nvim-cmp capabilities
       local capabilities = vim.lsp.protocol.make_client_capabilities()
       capabilities = require("cmp_nvim_lsp").default_capabilities(capabilities)
-      
+
       -- Enable snippets support
       capabilities.textDocument.completion.completionItem.snippetSupport = true
 
@@ -345,9 +432,9 @@ return {
         }),
         sources = cmp.config.sources({
           { name = "nvim_lsp", priority = 1000 },
-          { name = "luasnip", priority = 750 },
-          { name = "buffer", priority = 500 },
-          { name = "path", priority = 250 },
+          { name = "luasnip",  priority = 750 },
+          { name = "buffer",   priority = 500 },
+          { name = "path",     priority = 250 },
         }),
         formatting = {
           format = lspkind.cmp_format({
@@ -398,8 +485,10 @@ return {
         server = {
           on_attach = function(_, bufnr)
             -- Rust-specific keybindings
-            vim.keymap.set("n", "<leader>rh", rt.hover_actions.hover_actions, { buffer = bufnr, desc = "Rust hover actions" })
-            vim.keymap.set("n", "<leader>ra", rt.code_action_group.code_action_group, { buffer = bufnr, desc = "Rust code action group" })
+            vim.keymap.set("n", "<leader>rh", rt.hover_actions.hover_actions,
+              { buffer = bufnr, desc = "Rust hover actions" })
+            vim.keymap.set("n", "<leader>ra", rt.code_action_group.code_action_group,
+              { buffer = bufnr, desc = "Rust code action group" })
           end,
         },
         tools = {
