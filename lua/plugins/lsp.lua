@@ -32,8 +32,8 @@ return {
           "yamlls",        -- YAML
           "jsonls",        -- JSON
           "bashls",        -- Shell scripts
-          "pyright",
-          "ruff",
+          "pyright",       -- Python LSP
+          "ruff",          -- Python linter/formatter
         },
         automatic_installation = true,
       })
@@ -51,6 +51,28 @@ return {
       { "j-hui/fidget.nvim", opts = {} },
     },
     config = function()
+      -- FIXED: Helper functions moved to the top
+      local function get_python_command()
+        if vim.fn.executable("python3") == 1 then
+          return "python3"
+        elseif vim.fn.executable("python") == 1 then
+          return "python"
+        else
+          vim.notify("Neither 'python3' nor 'python' found in PATH", vim.log.levels.ERROR)
+          return "python3"
+        end
+      end
+
+      local function get_pip_command()
+        if vim.fn.executable("pip3") == 1 then
+          return "pip3"
+        elseif vim.fn.executable("pip") == 1 then
+          return "pip"
+        else
+          return "pip3"
+        end
+      end
+
       local lspconfig = require("lspconfig")
       local configs = require("configs")
 
@@ -84,6 +106,12 @@ return {
       vim.lsp.handlers["textDocument/signatureHelp"] = vim.lsp.with(
         vim.lsp.handlers.signature_help, { border = "rounded" }
       )
+
+      -- nvim-cmp capabilities (FIXED: moved before LSP setups)
+      local capabilities = vim.lsp.protocol.make_client_capabilities()
+      capabilities = require("cmp_nvim_lsp").default_capabilities(capabilities)
+      -- Enable snippets support
+      capabilities.textDocument.completion.completionItem.snippetSupport = true
 
       -- LSP Attach configuration
       vim.api.nvim_create_autocmd("LspAttach", {
@@ -151,6 +179,7 @@ return {
             end, desc_opts("Cargo run"))
           end
 
+          -- FIXED: Python-specific keymaps (functions now defined above)
           if client.name == "pyright" or client.name == "ruff" then
             local python_cmd = get_python_command()
             local pip_cmd = get_pip_command()
@@ -176,7 +205,6 @@ return {
             end, desc_opts("Create virtual environment"))
           end
 
-
           -- Telescope integration for LSP
           local telescope_builtin = require("telescope.builtin")
           vim.keymap.set("n", "<leader>lr", telescope_builtin.lsp_references, desc_opts("Find references"))
@@ -196,73 +224,7 @@ return {
         end,
       })
 
-      -- Python Language Server (Pyright)
-      lspconfig.pyright.setup({
-        capabilities = capabilities,
-        settings = {
-          python = {
-            analysis = {
-              typeCheckingMode = "basic",   -- "off", "basic", "strict"
-              autoSearchPaths = true,
-              diagnosticMode = "workspace", -- "openFilesOnly" or "workspace"
-              useLibraryCodeForTypes = true,
-              autoImportCompletions = true,
-            },
-          },
-        },
-        -- Python-specific on_attach
-        on_attach = function(client, bufnr)
-          -- Disable Pyright's formatting in favor of Ruff
-          client.server_capabilities.documentFormattingProvider = false
-          client.server_capabilities.documentRangeFormattingProvider = false
-        end,
-      })
-
-      -- Python Linter/Formatter (Ruff) - super fast Python tooling
-      lspconfig.ruff.setup({
-        capabilities = capabilities,
-        init_options = {
-          settings = {
-            -- Ruff settings
-            args = {
-              "--line-length=88", -- Black-compatible line length
-              "--select=E,W,F,I", -- Error, Warning, pyFlakes, Import sorting
-            },
-          },
-        },
-      })
-
-      -- Helper function to get the correct Python command
-      local function get_python_command()
-        if vim.fn.executable("python3") == 1 then
-          return "python3"
-        elseif vim.fn.executable("python") == 1 then
-          return "python"
-        else
-          vim.notify("Neither 'python3' nor 'python' found in PATH", vim.log.levels.ERROR)
-          return "python3" -- fallback
-        end
-      end
-
-      -- Helper function to get the correct pip command
-      local function get_pip_command()
-        if vim.fn.executable("pip3") == 1 then
-          return "pip3"
-        elseif vim.fn.executable("pip") == 1 then
-          return "pip"
-        else
-          return "pip3" -- fallback
-        end
-      end
-
-      -- nvim-cmp capabilities
-      local capabilities = vim.lsp.protocol.make_client_capabilities()
-      capabilities = require("cmp_nvim_lsp").default_capabilities(capabilities)
-
-      -- Enable snippets support
-      capabilities.textDocument.completion.completionItem.snippetSupport = true
-
-      -- Rust Analyzer configuration (FIXED: removed duplicate diagnostics sections)
+      -- Rust Analyzer configuration
       lspconfig.rust_analyzer.setup({
         capabilities = capabilities,
         settings = {
@@ -286,7 +248,7 @@ return {
                 ["async-recursion"] = { "async_recursion" },
               },
             },
-            -- Real-time diagnostics configuration (FIXED: only one diagnostics section)
+            -- Real-time diagnostics configuration
             diagnostics = {
               enable = true,
               experimental = {
@@ -337,6 +299,42 @@ return {
         end,
       })
 
+      -- Python Language Server (Pyright)
+      lspconfig.pyright.setup({
+        capabilities = capabilities,
+        settings = {
+          python = {
+            analysis = {
+              typeCheckingMode = "basic",   -- "off", "basic", "strict"
+              autoSearchPaths = true,
+              diagnosticMode = "workspace", -- "openFilesOnly" or "workspace"
+              useLibraryCodeForTypes = true,
+              autoImportCompletions = true,
+            },
+          },
+        },
+        -- Python-specific on_attach
+        on_attach = function(client, bufnr)
+          -- Disable Pyright's formatting in favor of Ruff
+          client.server_capabilities.documentFormattingProvider = false
+          client.server_capabilities.documentRangeFormattingProvider = false
+        end,
+      })
+
+      -- Python Linter/Formatter (Ruff) - super fast Python tooling
+      lspconfig.ruff.setup({
+        capabilities = capabilities,
+        init_options = {
+          settings = {
+            -- Ruff settings
+            args = {
+              "--line-length=88", -- Black-compatible line length
+              "--select=E,W,F,I", -- Error, Warning, pyFlakes, Import sorting
+            },
+          },
+        },
+      })
+
       -- Lua LS for Neovim configuration
       lspconfig.lua_ls.setup({
         capabilities = capabilities,
@@ -374,7 +372,7 @@ return {
     end,
   },
 
-  -- Autocompletion (keeping your existing config)
+  -- Autocompletion
   {
     "hrsh7th/nvim-cmp",
     event = "InsertEnter",
@@ -474,7 +472,7 @@ return {
     end,
   },
 
-  -- Better Rust tools (keeping your existing config)
+  -- Better Rust tools
   {
     "simrat39/rust-tools.nvim",
     ft = "rust",
@@ -500,7 +498,7 @@ return {
     end,
   },
 
-  -- Crate management for Cargo.toml (keeping your existing config)
+  -- Crate management for Cargo.toml
   {
     "saecki/crates.nvim",
     ft = { "toml" },
