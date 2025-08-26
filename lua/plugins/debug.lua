@@ -501,11 +501,12 @@ return {
       end
 
       -- Mac-friendly F-key mappings for debugging
-      vim.keymap.set("n", "<F7>", dap.toggle_breakpoint, { desc = "Toggle Breakpoint" })
       vim.keymap.set("n", "<F5>", launch_debugger, { desc = "Start/Continue Debugging (Auto-Build & Auto-Detect)" })
-      vim.keymap.set("n", "<F1>", dap.step_into, { desc = "Step Into" })
-      vim.keymap.set("n", "<F8>", dap.step_over, { desc = "Step Over" })
-      vim.keymap.set("n", "<F2>", dap.step_out, { desc = "Step Out" })
+      vim.keymap.set("n", "<F7>", dap.toggle_breakpoint, { desc = "Toggle Breakpoint" })
+      vim.keymap.set("n", "<F8>", dap.continue, { desc = "Continue Debugging" })
+      vim.keymap.set("n", "<F9>", dap.step_into, { desc = "Step Into" })
+      vim.keymap.set("n", "<F10>", dap.step_over, { desc = "Step Over" })
+      vim.keymap.set("n", "<S-F9>", dap.step_out, { desc = "Step Out" })
       vim.keymap.set("n", "<F6>", terminate_dap, { desc = "Stop Debugging" })
 
       -- Leader key alternatives for debugging
