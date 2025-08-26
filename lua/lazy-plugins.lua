@@ -16,7 +16,8 @@ local plugins = {
   require('plugins.nvim-tree'),
   require('plugins.lsp'),
   require('plugins.vim-tmux-navigator'),
-  require('plugins.lualine')
+  require('plugins.lualine'),
+  require('plugins.nvim-autopairs'),
 }
 
 local opts = {
