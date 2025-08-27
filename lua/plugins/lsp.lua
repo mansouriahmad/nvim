@@ -37,6 +37,24 @@ return {
         },
         automatic_installation = true,
       })
+      
+      -- Auto-install debuggers based on platform
+      vim.defer_fn(function()
+        local mason_registry = require("mason-registry")
+        local debuggers_to_install = {}
+        
+        -- Always install these
+        table.insert(debuggers_to_install, "codelldb")  -- Rust and C# (cross-platform)
+        table.insert(debuggers_to_install, "debugpy")   -- Python
+        table.insert(debuggers_to_install, "netcoredbg") -- C# (preferred for all platforms)
+        
+        for _, debugger in ipairs(debuggers_to_install) do
+          if not mason_registry.is_installed(debugger) then
+            vim.notify("Installing " .. debugger .. " via Mason...", vim.log.levels.INFO)
+            vim.cmd("MasonInstall " .. debugger)
+          end
+        end
+      end, 1000)
     end,
   },
 
@@ -51,7 +69,7 @@ return {
       { "j-hui/fidget.nvim", opts = {} },
     },
     config = function()
-      -- FIXED: Helper functions moved to the top
+      -- Helper functions
       local function get_python_command()
         if vim.fn.executable("python3") == 1 then
           return "python3"
@@ -76,7 +94,7 @@ return {
       local lspconfig = require("lspconfig")
       local configs = require("configs")
 
-      -- nvim-cmp capabilities (FIXED: moved before LSP setups)
+      -- nvim-cmp capabilities
       local capabilities = vim.lsp.protocol.make_client_capabilities()
       capabilities = require("cmp_nvim_lsp").default_capabilities(capabilities)
       -- Enable snippets support
@@ -94,7 +112,7 @@ return {
         },
         signs = true,
         underline = true,
-        update_in_insert = true, -- CHANGED: This enables diagnostics while typing
+        update_in_insert = true,
         severity_sort = true,
       })
 
@@ -179,7 +197,7 @@ return {
             end, desc_opts("Cargo run"))
           end
 
-          -- Python-specific keymaps (FIXED: functions now defined above)
+          -- Python-specific keymaps
           if client.name == "pyright" or client.name == "ruff" then
             local python_cmd = get_python_command()
             local pip_cmd = get_pip_command()
@@ -205,6 +223,25 @@ return {
             end, desc_opts("Create virtual environment"))
           end
 
+          -- C# specific keymaps
+          if client.name == "omnisharp" or client.name == "csharp_ls" then
+            vim.keymap.set("n", "<leader>cb", function()
+              vim.cmd("!dotnet build")
+            end, desc_opts("dotnet build"))
+
+            vim.keymap.set("n", "<leader>cr", function()
+              vim.cmd("!dotnet run")
+            end, desc_opts("dotnet run"))
+
+            vim.keymap.set("n", "<leader>ct", function()
+              vim.cmd("!dotnet test")
+            end, desc_opts("dotnet test"))
+
+            vim.keymap.set("n", "<leader>cR", function()
+              vim.cmd("!dotnet restore")
+            end, desc_opts("dotnet restore"))
+          end
+
           -- Telescope integration for LSP
           local telescope_builtin = require("telescope.builtin")
           vim.keymap.set("n", "<leader>lr", telescope_builtin.lsp_references, desc_opts("Find references"))
@@ -214,7 +251,7 @@ return {
           vim.keymap.set("n", "<leader>ls", telescope_builtin.lsp_document_symbols, desc_opts("Document symbols"))
           vim.keymap.set("n", "<leader>lw", telescope_builtin.lsp_workspace_symbols, desc_opts("Workspace symbols"))
 
-          -- Enable inlay hints if supported (great for Rust!)
+          -- Enable inlay hints if supported
           if client.server_capabilities.inlayHintProvider then
             vim.lsp.inlay_hint.enable(true, { bufnr = bufnr })
             vim.keymap.set("n", "<leader>ih", function()
@@ -226,40 +263,39 @@ return {
 
       -- Custom breakpoint signs for better clarity
       vim.fn.sign_define('DapBreakpoint', {
-        text = '🔴', -- Red circle for breakpoint
+        text = '🔴',
         texthl = 'DapBreakpoint',
         linehl = '',
         numhl = 'DapBreakpoint'
       })
 
       vim.fn.sign_define('DapBreakpointCondition', {
-        text = '🟡', -- Yellow circle for conditional breakpoint
+        text = '🟡',
         texthl = 'DapBreakpointCondition',
         linehl = '',
         numhl = 'DapBreakpointCondition'
       })
 
       vim.fn.sign_define('DapBreakpointRejected', {
-        text = '❌', -- X for rejected/invalid breakpoint
+        text = '❌',
         texthl = 'DapBreakpointRejected',
         linehl = '',
         numhl = 'DapBreakpointRejected'
       })
 
       vim.fn.sign_define('DapStopped', {
-        text = '▶️', -- Play button for current execution point
+        text = '▶️',
         texthl = 'DapStopped',
         linehl = 'DapStoppedLine',
         numhl = 'DapStopped'
       })
 
       vim.fn.sign_define('DapLogPoint', {
-        text = '📝', -- Note for log points
+        text = '📝',
         texthl = 'DapLogPoint',
         linehl = '',
         numhl = 'DapLogPoint'
       })
-
 
       -- Rust Analyzer configuration
       lspconfig.rust_analyzer.setup({
@@ -271,7 +307,6 @@ return {
               loadOutDirsFromCheck = true,
               runBuildScripts = true,
             },
-            -- Check on save with clippy
             checkOnSave = {
               allFeatures = true,
               command = "clippy",
@@ -285,7 +320,6 @@ return {
                 ["async-recursion"] = { "async_recursion" },
               },
             },
-            -- Real-time diagnostics configuration
             diagnostics = {
               enable = true,
               experimental = {
@@ -294,7 +328,6 @@ return {
               disabled = false,
               enableExperimental = true,
             },
-            -- Inlay hints configuration
             inlayHints = {
               bindingModeHints = {
                 enable = false,
@@ -329,9 +362,7 @@ return {
             },
           },
         },
-        -- Additional rust-analyzer specific options
         on_attach = function(client, bufnr)
-          -- Request semantic tokens for better highlighting
           client.server_capabilities.semanticTokensProvider = nil
         end,
       })
@@ -342,31 +373,28 @@ return {
         settings = {
           python = {
             analysis = {
-              typeCheckingMode = "basic",   -- "off", "basic", "strict"
+              typeCheckingMode = "basic",
               autoSearchPaths = true,
-              diagnosticMode = "workspace", -- "openFilesOnly" or "workspace"
+              diagnosticMode = "workspace",
               useLibraryCodeForTypes = true,
               autoImportCompletions = true,
             },
           },
         },
-        -- Python-specific on_attach
         on_attach = function(client, bufnr)
-          -- Disable Pyright's formatting in favor of Ruff
           client.server_capabilities.documentFormattingProvider = false
           client.server_capabilities.documentRangeFormattingProvider = false
         end,
       })
 
-      -- Python Linter/Formatter (Ruff) - super fast Python tooling
+      -- Python Linter/Formatter (Ruff)
       lspconfig.ruff.setup({
         capabilities = capabilities,
         init_options = {
           settings = {
-            -- Ruff settings
             args = {
-              "--line-length=88", -- Black-compatible line length
-              "--select=E,W,F,I", -- Error, Warning, pyFlakes, Import sorting
+              "--line-length=88",
+              "--select=E,W,F,I",
             },
           },
         },
@@ -420,7 +448,7 @@ return {
       "hrsh7th/cmp-cmdline",
       "L3MON4D3/LuaSnip",
       "saadparwaiz1/cmp_luasnip",
-      "onsails/lspkind.nvim", -- VS Code-like pictograms
+      "onsails/lspkind.nvim",
     },
     config = function()
       local cmp = require("cmp")
@@ -519,7 +547,6 @@ return {
       rt.setup({
         server = {
           on_attach = function(_, bufnr)
-            -- Rust-specific keybindings
             vim.keymap.set("n", "<leader>rh", rt.hover_actions.hover_actions,
               { buffer = bufnr, desc = "Rust hover actions" })
             vim.keymap.set("n", "<leader>ra", rt.code_action_group.code_action_group,
@@ -551,7 +578,6 @@ return {
           border = "rounded",
         },
       })
-      -- Keymaps for crate management
       vim.api.nvim_create_autocmd("BufRead", {
         group = vim.api.nvim_create_augroup("CratesKeymaps", { clear = true }),
         pattern = "Cargo.toml",
@@ -574,4 +600,3 @@ return {
     end,
   },
 }
-
