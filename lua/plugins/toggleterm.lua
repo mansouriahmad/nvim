@@ -9,7 +9,7 @@ return {
       terminal_mappings = true,
       persist_size = true,
       close_on_exit = true,
-      shell = vim.o.shell,
+  shell = vim.loop.os_uname().sysname == "Windows_NT" and "pwsh.exe" or vim.o.shell,
     })
 
     local Terminal = require("toggleterm.terminal").Terminal

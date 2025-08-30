@@ -1,5 +1,6 @@
 local plugins = {
-	require('plugins.which-key'),
+  -- NOTE: Some plugins may require extra setup or may not work on Windows (see plugin configs)
+  require('plugins.which-key'),
   require('plugins.colorschemes'),
 	require('plugins.telescope'),
 	--require('plugins.lightline'),

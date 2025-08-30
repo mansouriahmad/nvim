@@ -7,12 +7,13 @@ return {
       "nvim-neotest/nvim-nio",
       "Weissle/persistent-breakpoints.nvim",
       "mfussenegger/nvim-dap-python",
-      { "Decodetalkers/csharpls-extended-lsp.nvim", lazy = true },
     },
     config = function()
       local dap = require("dap")
       local dapui = require("dapui")
       local persistent_breakpoints = require("persistent-breakpoints")
+
+      dap.set_log_level("DEBUG") -- Enable DAP verbose logging
 
       persistent_breakpoints.setup({
         save_dir = vim.fn.stdpath("data") .. "/persistent_breakpoints/" .. vim.fn.fnamemodify(vim.fn.getcwd(), ":p:h:t"),
@@ -58,11 +59,17 @@ return {
       end
 
       -- codelldb adapter for Rust
+      local codelldb_path
+      if vim.loop.os_uname().sysname == "Windows_NT" then
+        codelldb_path = "C:/Users/AhmadMansouri/AppData/Local/nvim-data/mason/packages/codelldb/extension/adapter/codelldb.exe"
+      else
+        codelldb_path = vim.fn.stdpath("data") .. "/mason/bin/codelldb"
+      end
       dap.adapters.codelldb = {
         type = "server",
         port = "${port}",
         executable = {
-          command = vim.fn.stdpath("data") .. "/mason/bin/codelldb",
+          command = codelldb_path,
           args = { "--port", "${port}" },
         },
       }
@@ -70,7 +77,8 @@ return {
       -- Python debugger adapter (debugpy)
       dap.adapters.python = {
         type = "executable",
-        command = vim.fn.stdpath("data") .. "/mason/bin/debugpy-adapter",
+        command = "python",
+        args = { "-m", "debugpy.adapter" },
       }
 
       -- Helper function to get the correct Python path
@@ -125,7 +133,12 @@ return {
           return nil
         end
 
-        local binary_path = cwd .. '/target/debug/' .. package_name
+        local ext = ''
+        if vim.loop.os_uname().sysname == 'Windows_NT' then
+          ext = '.exe'
+        end
+
+        local binary_path = cwd .. '/target/debug/' .. package_name .. ext
         if vim.fn.filereadable(binary_path) == 1 then
           if vim.fn.executable(binary_path) == 1 then
             return binary_path
@@ -134,7 +147,7 @@ return {
           end
         end
 
-        local release_path = cwd .. '/target/release/' .. package_name
+        local release_path = cwd .. '/target/release/' .. package_name .. ext
         if vim.fn.filereadable(release_path) == 1 then
           if vim.fn.executable(release_path) == 1 then
             return release_path
@@ -267,12 +280,13 @@ return {
         -- Enhanced debugger path resolution
         local function find_debugger_executable(debugger_name)
           -- Strategy 1: Check Mason installation first
-          local mason_path = vim.fn.stdpath("data") .. "/mason/bin/" .. debugger_name
           local platform = detect_platform()
+          local mason_path
           if platform == "Windows" then
-            mason_path = mason_path .. ".exe"
+            mason_path = "C:/Users/AhmadMansouri/AppData/Local/nvim-data/mason/packages/netcoredbg/netcoredbg/netcoredbg.exe"
+          else
+            mason_path = vim.fn.stdpath("data") .. "/mason/bin/" .. debugger_name .. ".exe"
           end
-          
           if vim.fn.executable(mason_path) == 1 then
             return mason_path
           end
@@ -667,42 +681,6 @@ return {
       dap.listeners.before.event_exited["csharp-enhanced"] = function()
         vim.notify("C# process exited", vim.log.levels.INFO)
       end
-
-      -- Custom breakpoint signs
-      vim.fn.sign_define('DapBreakpoint', {
-        text = '🔴',
-        texthl = 'DapBreakpoint',
-        linehl = '',
-        numhl = 'DapBreakpoint'
-      })
-
-      vim.fn.sign_define('DapBreakpointCondition', {
-        text = '🟡',
-        texthl = 'DapBreakpointCondition',
-        linehl = '',
-        numhl = 'DapBreakpointCondition'
-      })
-
-      vim.fn.sign_define('DapBreakpointRejected', {
-        text = '❌',
-        texthl = 'DapBreakpointRejected',
-        linehl = '',
-        numhl = 'DapBreakpointRejected'
-      })
-
-      vim.fn.sign_define('DapStopped', {
-        text = '▶️',
-        texthl = 'DapStopped',
-        linehl = 'DapStoppedLine',
-        numhl = 'DapStopped'
-      })
-
-      vim.fn.sign_define('DapLogPoint', {
-        text = '📝',
-        texthl = 'DapLogPoint',
-        linehl = '',
-        numhl = 'DapLogPoint'
-      })
 
       -- Auto-install debuggers when opening relevant files
       vim.api.nvim_create_autocmd("BufReadPost", {

@@ -34,20 +34,21 @@ return {
           "bashls",        -- Shell scripts
           "pyright",       -- Python LSP
           "ruff",          -- Python linter/formatter
+          "omnisharp",     -- C# Language Server
         },
         automatic_installation = true,
       })
-      
+
       -- Auto-install debuggers based on platform
       vim.defer_fn(function()
         local mason_registry = require("mason-registry")
         local debuggers_to_install = {}
-        
+
         -- Always install these
         table.insert(debuggers_to_install, "codelldb")  -- Rust and C# (cross-platform)
         table.insert(debuggers_to_install, "debugpy")   -- Python
         table.insert(debuggers_to_install, "netcoredbg") -- C# (preferred for all platforms)
-        
+
         for _, debugger in ipairs(debuggers_to_install) do
           if not mason_registry.is_installed(debugger) then
             vim.notify("Installing " .. debugger .. " via Mason...", vim.log.levels.INFO)
@@ -69,6 +70,39 @@ return {
       { "j-hui/fidget.nvim", opts = {} },
     },
     config = function()
+      vim.lsp.set_log_level("debug") -- Set LSP logging to debug level
+
+      -- Override default LSP server configurations using handlers
+      require("mason-lspconfig").setup_handlers({
+        -- Custom handler for omnisharp
+        omnisharp = function()
+          require("lspconfig").omnisharp.setup({
+            capabilities = capabilities,
+            cmd = { vim.fn.stdpath("data") .. "/mason/bin/omnisharp", "--languageserver", "--hostPID", tostring(vim.fn.getpid()) },
+            settings = {
+              dotnet = {
+                enable = true,
+                enablePackageRestore = false, -- Explicitly disable if causing issues
+              },
+              FormattingOptions = {
+                EnableEditorConfigSupport = true,
+              },
+              Sdk = {
+                IncludePrereleases = true,
+              },
+            },
+          })
+        end,
+
+        -- Default handler for other language servers
+        -- This will be called for all other servers that don't have a custom handler
+        ["_"] = function(server_name)
+          require("lspconfig")[server_name].setup({
+            capabilities = capabilities,
+          })
+        end,
+      })
+
       -- Helper functions
       local function get_python_command()
         if vim.fn.executable("python3") == 1 then
@@ -117,11 +151,31 @@ return {
       })
 
       -- Diagnostic signs
-      local signs = { Error = " ", Warn = " ", Hint = "󰠠 ", Info = " " }
-      for type, icon in pairs(signs) do
-        local hl = "DiagnosticSign" .. type
-        vim.fn.sign_define(hl, { text = icon, texthl = hl, numhl = "" })
-      end
+      vim.diagnostic.config({
+        signs = {
+          text = {
+            [vim.diagnostic.severity.ERROR] = " ",
+            [vim.diagnostic.severity.WARN] = " ",
+            [vim.diagnostic.severity.INFO] = " ",
+            [vim.diagnostic.severity.HINT] = "󰠠 ",
+          },
+          texthl = {
+            [vim.diagnostic.severity.ERROR] = "DiagnosticSignError",
+            [vim.diagnostic.severity.WARN] = "DiagnosticSignWarn",
+            [vim.diagnostic.severity.INFO] = "DiagnosticSignInfo",
+            [vim.diagnostic.severity.HINT] = "DiagnosticSignHint",
+          },
+          numhl = {
+            [vim.diagnostic.severity.ERROR] = "DiagnosticSignError",
+            [vim.diagnostic.severity.WARN] = "DiagnosticSignWarn",
+            [vim.diagnostic.severity.INFO] = "DiagnosticSignInfo",
+            [vim.diagnostic.severity.HINT] = "DiagnosticSignHint",
+          },
+        },
+        virtual_text = true,
+        update_in_insert = false,
+        severity_sort = true,
+      })
 
       -- Add border to hover and signature help
       vim.lsp.handlers["textDocument/hover"] = vim.lsp.with(
@@ -224,7 +278,7 @@ return {
           end
 
           -- C# specific keymaps
-          if client.name == "omnisharp" or client.name == "csharp_ls" then
+          if client.name == "omnisharp" then
             vim.keymap.set("n", "<leader>cb", function()
               vim.cmd("!dotnet build")
             end, desc_opts("dotnet build"))
