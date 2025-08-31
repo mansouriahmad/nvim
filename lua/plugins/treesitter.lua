@@ -1,47 +1,43 @@
+-- lua/plugins/treesitter.lua (Updated to fix markdown highlighting issue)
+
 return {
   'nvim-treesitter/nvim-treesitter',
-  build = ':TSUpdate',   -- This command compiles the parsers for the first time
+  build = ':TSUpdate',
   dependencies = {
     'nvim-treesitter/nvim-treesitter-textobjects',
     'nvim-treesitter/nvim-treesitter-context',
   },
   config = function()
     require('nvim-treesitter.configs').setup {
-      -- A list of parser names, or "all" (the five listed parsers should always be installed)
       ensure_installed = { 
         "c", "lua", "vim", "vimdoc", "javascript", "typescript", "html", "css", "python", "rust",
-        "json", "yaml", "markdown", "bash", "sql", "go", "java", "cpp", "c_sharp", "php"
+        "json", "yaml", "markdown", "markdown_inline", "bash", "sql", "go", "java", "cpp", "c_sharp", "php"
       },
 
-      -- Install parsers synchronously (build process for `ensure_installed`)
-      -- Setting this to true will make your Neovim startup slower the first time
-      -- after adding new parsers, as it will compile them.
       sync_install = false,
-
-      -- Automatically install missing parsers when entering a buffer for a given filetype
       auto_install = true,
 
-      ---- Highlight options ----
       highlight = {
-        enable = true,   -- `false` will disable the whole extension
-        -- Setting this to true will add an `hl` group to the Treesitter nodes.
-        -- You can then use it for more advanced highlighting.
-        -- disable = { "c", "rust" },  -- uncomment to disable highlight for a list of filetypes
-        additional_vim_regex_highlighting = false,
+        enable = true,
+        -- FIX 1: Disable Treesitter highlighting for markdown to avoid conflicts
+        -- This is the most reliable fix for the markdown issue
+        disable = { "markdown" },
+        
+        -- Alternative approach - keep treesitter but disable additional highlighting
+        additional_vim_regex_highlighting = { "markdown" },
       },
 
-      ---- Indentation options ----
-      indent = { enable = true },
+      indent = { 
+        enable = true,
+        -- Also disable indent for markdown to avoid similar issues
+        disable = { "markdown" }
+      },
 
-      ---- Text Objects (optional, but highly recommended) ----
-      -- This enables text objects like `ac` (around class), `if` (in function)
-      -- which are incredibly useful for selections and motions.
       textobjects = {
         select = {
           enable = true,
-          lookahead = true, -- Automatically jump to the end of a textobject (e.g. after 'if')
+          lookahead = true,
           keymaps = {
-            -- You can use these to select different parts of your code
             ['af'] = '@function.outer',
             ['if'] = '@function.inner',
             ['ac'] = '@class.outer',
@@ -54,7 +50,7 @@ return {
         },
         move = {
           enable = true,
-          set_jumps = true, -- whether to set jumps in the jumplist
+          set_jumps = true,
           goto_next_start = {
             [']m'] = '@function.outer',
             [']]'] = '@class.outer',
@@ -74,10 +70,6 @@ return {
         },
       },
 
-      ---- Other optional configurations ----
-      -- nvim-treesitter-context (optional, shows current function/class in a floating window)
-      -- context_commentstring (optional, for smart commenting)
-      -- Incremental selection (useful for selecting increasing AST nodes)
       incremental_selection = {
         enable = true,
         keymaps = {
@@ -89,11 +81,13 @@ return {
       },
     }
 
-    -- Setup treesitter-context
+    -- Setup treesitter-context with markdown disabled
     require('treesitter-context').setup({
       enable = true,
       max_lines = 0,
       trim_scope = 'outer',
+      -- Disable context for markdown to avoid similar issues
+      disable = { 'markdown' },
       patterns = {
         default = {
           'class',
@@ -107,5 +101,79 @@ return {
         },
       },
     })
+
+    -- FIX 2: Add autocmd to handle markdown files specifically
+    vim.api.nvim_create_autocmd("FileType", {
+      pattern = "markdown",
+      callback = function()
+        -- Disable treesitter highlighting for this buffer
+        vim.treesitter.stop()
+        
+        -- Enable built-in markdown syntax highlighting instead
+        vim.cmd("syntax on")
+        vim.cmd("set syntax=markdown")
+        
+        -- Optional: Add markdown-specific settings
+        vim.opt_local.wrap = true
+        vim.opt_local.linebreak = true
+        vim.opt_local.conceallevel = 2
+      end,
+    })
   end,
 }
+
+-- Alternative solution: Create a separate markdown configuration
+-- If you want to keep trying treesitter for markdown, you can use this instead:
+
+--[[
+-- FIX 3: More granular markdown treesitter config
+return {
+  'nvim-treesitter/nvim-treesitter',
+  build = ':TSUpdate',
+  dependencies = {
+    'nvim-treesitter/nvim-treesitter-textobjects',
+    'nvim-treesitter/nvim-treesitter-context',
+  },
+  config = function()
+    require('nvim-treesitter.configs').setup {
+      ensure_installed = { 
+        "c", "lua", "vim", "vimdoc", "javascript", "typescript", "html", "css", "python", "rust",
+        "json", "yaml", "markdown", "markdown_inline", "bash", "sql", "go", "java", "cpp", "c_sharp", "php"
+      },
+
+      sync_install = false,
+      auto_install = true,
+
+      highlight = {
+        enable = true,
+        -- Try keeping treesitter but with safer settings
+        additional_vim_regex_highlighting = false,
+        
+        -- Custom function to disable highlighting for problematic cases
+        disable = function(lang, buf)
+          -- Check if this is a large file (>50KB) or has issues
+          local max_filesize = 50 * 1024 -- 50 KB
+          local ok, stats = pcall(vim.loop.fs_stat, vim.api.nvim_buf_get_name(buf))
+          if ok and stats and stats.size > max_filesize then
+            return true
+          end
+          
+          -- Disable for markdown if we detect the problematic pattern
+          if lang == "markdown" then
+            local lines = vim.api.nvim_buf_line_count(buf)
+            if lines > 1000 then  -- Large markdown files
+              return true
+            end
+          end
+          
+          return false
+        end,
+      },
+
+      indent = { enable = true },
+
+      -- Rest of config...
+    end
+  end,
+}
+--]]
