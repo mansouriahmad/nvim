@@ -32,9 +32,6 @@ return {
           "yamlls",        -- YAML
           "jsonls",        -- JSON
           "bashls",        -- Shell scripts
-          "pyright",       -- Python LSP
-          "ruff",          -- Python linter/formatter
-          "omnisharp",     -- C# Language Server
         },
         automatic_installation = true,
       })
@@ -44,8 +41,6 @@ return {
         local mason_registry = require("mason-registry")
         local debuggers_to_install = {
           "codelldb",  -- Rust and C# (cross-platform)
-          "debugpy",   -- Python
-          "netcoredbg" -- C# (preferred for all platforms)
         }
 
         for _, debugger in ipairs(debuggers_to_install) do
