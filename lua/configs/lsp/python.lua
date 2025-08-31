@@ -146,13 +146,13 @@ local function find_pyright()
   end
 end
 
-local function find_ruff_lsp()
+local function find_ruff()
   local mason_path = vim.fn.stdpath("data") .. "/mason/bin"
   
   if get_platform() == "windows" then
     return vim.fn.exepath("ruff-lsp.exe") ~= "" and "ruff-lsp.exe" or nil
   else
-    return vim.fn.exepath("ruff-lsp") ~= "" and "ruff-lsp" or nil
+    return vim.fn.exepath("ruff") ~= "" and "ruff" or nil
   end
 end
 
@@ -255,11 +255,11 @@ function M.setup_lsp(capabilities)
   end
   
   -- Setup Ruff LSP (linting and formatting)
-  local ruff_cmd = find_ruff_lsp()
+  local ruff_cmd = find_ruff()
   if ruff_cmd then
-    lspconfig.ruff_lsp.setup({
+    lspconfig.ruff.setup({
       capabilities = capabilities,
-      cmd = { ruff_cmd },
+      cmd = { ruff_cmd, "--preview", "--watch" }, -- Add --preview and --watch
       init_options = {
         settings = {
           -- Ruff configuration

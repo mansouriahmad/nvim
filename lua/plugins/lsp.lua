@@ -33,7 +33,7 @@ return {
           "jsonls",        -- JSON
           "bashls",        -- Shell scripts
           "pyright",       -- Python LSP
-          "ruff_lsp",      -- Python linter/formatter
+          "ruff",          -- Python linter/formatter
           "omnisharp",     -- C# Language Server
         },
         automatic_installation = true,
@@ -43,9 +43,9 @@ return {
       vim.defer_fn(function()
         local mason_registry = require("mason-registry")
         local debuggers_to_install = {
-          "codelldb",    -- Rust and C# (cross-platform)
-          "debugpy",     -- Python
-          "netcoredbg"   -- C# (preferred for all platforms)
+          "codelldb",  -- Rust and C# (cross-platform)
+          "debugpy",   -- Python
+          "netcoredbg" -- C# (preferred for all platforms)
         }
 
         for _, debugger in ipairs(debuggers_to_install) do
@@ -188,7 +188,7 @@ return {
 
       -- Setup remaining language servers (non-language specific ones)
       local lspconfig = require("lspconfig")
-      
+
       -- Lua LS for Neovim configuration
       lspconfig.lua_ls.setup({
         capabilities = capabilities,
@@ -325,7 +325,6 @@ return {
     end,
   },
 
-  -- Better Rust tools
   {
     "simrat39/rust-tools.nvim",
     ft = "rust",
@@ -349,7 +348,6 @@ return {
       })
     end,
   },
-
   -- Crate management for Cargo.toml
   {
     "saecki/crates.nvim",
@@ -388,3 +386,4 @@ return {
     end,
   },
 }
+
