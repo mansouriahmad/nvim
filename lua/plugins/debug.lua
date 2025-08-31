@@ -58,7 +58,7 @@ return {
       -- Auto-setup breakpoint persistence for each language
       vim.api.nvim_create_autocmd("BufReadPost", {
         group = vim.api.nvim_create_augroup("DapSetup", { clear = true }),
-        pattern = { "*.rs", "*.py", "*.cs" },
+        pattern = { "*.rs", "*.py" },
         callback = function()
           -- Load persistent breakpoints for this file
           persistent_breakpoints.load_breakpoints_for_current_buffer()
@@ -71,8 +71,6 @@ return {
         local language_icons = {
           rust = "🦀",
           python = "🐍", 
-          cs = "⚡",
-          csharp = "⚡"
         }
         
         local icon = language_icons[filetype] or "🔍"

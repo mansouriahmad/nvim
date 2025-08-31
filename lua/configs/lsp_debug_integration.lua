@@ -4,8 +4,6 @@
 local M = {}
 
 -- Import language-specific modules
-local csharp_lsp = require('configs.lsp.csharp')
-local csharp_debug = require('configs.debug.csharp')
 local rust_lsp = require('configs.lsp.rust')
 local rust_debug = require('configs.debug.rust')
 local python_lsp = require('configs.lsp.python')
@@ -13,9 +11,6 @@ local python_debug = require('configs.debug.python')
 
 -- Setup function for LSP servers
 function M.setup_lsp(capabilities)
-  -- Setup C# LSP
-  csharp_lsp.setup_lsp(capabilities)
-  
   -- Setup Rust LSP
   rust_lsp.setup_lsp(capabilities)
   
@@ -29,17 +24,14 @@ function M.setup_debuggers()
   local dapui = require("dapui")
   
   -- Setup debuggers
-  csharp_debug.setup_debugger()
   rust_debug.setup_debugger()
   python_debug.setup_debugger()
   
   -- Setup configurations
-  csharp_debug.setup_configurations()
   rust_debug.setup_configurations()
   python_debug.setup_configurations()
   
   -- Setup language-specific keymaps
-  csharp_debug.setup_keymaps()
   rust_debug.setup_keymaps()
   python_debug.setup_keymaps()
   
@@ -94,9 +86,6 @@ function M.universal_debug_launcher()
   elseif filetype == 'python' then
     vim.notify('🐍 Launching Python debugger...', vim.log.levels.INFO)
     python_debug.run_and_debug()
-  elseif filetype == 'cs' or filetype == 'csharp' then
-    vim.notify('⚡ Launching C# debugger...', vim.log.levels.INFO)
-    csharp_debug.build_and_debug()
   else
     vim.notify('No automatic debug configuration for ' .. filetype, vim.log.levels.INFO)
     dap.continue()
@@ -146,7 +135,6 @@ function M.setup_global_keymaps()
   
   -- Language-specific debug shortcuts
   vim.keymap.set("n", "<leader>drs", rust_debug.build_and_debug, { desc = "Build & Debug Rust" })
-  vim.keymap.set("n", "<leader>dcs", csharp_debug.build_and_debug, { desc = "Build & Debug C#" })
   vim.keymap.set("n", "<leader>dpy", python_debug.run_and_debug, { desc = "Run & Debug Python" })
 end
 
@@ -191,40 +179,6 @@ end
 -- Setup autocmds for language-specific configurations
 function M.setup_autocmds()
   local augroup = vim.api.nvim_create_augroup("LSPDebugIntegration", { clear = true })
-  
-  -- C# file detection and setup
-  vim.api.nvim_create_autocmd({'BufNewFile', 'BufRead'}, {
-    group = augroup,
-    pattern = '*.cs',
-    callback = function()
-      -- Set up C#-specific options
-      vim.opt_local.commentstring = '// %s'
-      vim.opt_local.shiftwidth = 4
-      vim.opt_local.tabstop = 4
-      vim.opt_local.expandtab = true
-      
-      -- Ensure debugger is installed
-      csharp_debug.ensure_debugger_installed()
-      
-      -- C# specific buffer keymaps
-      local opts = { buffer = true, noremap = true, silent = true }
-      
-      vim.keymap.set('n', '<leader>cf', function()
-        require('telescope.builtin').lsp_document_symbols({
-          symbols = { 'class', 'method', 'property', 'field', 'constructor' }
-        })
-      end, vim.tbl_extend('force', opts, { desc = 'Find C# symbols' }))
-      
-      vim.keymap.set('n', '<leader>cu', function()
-        local using = vim.fn.input('Add using: ')
-        if using ~= '' then
-          vim.cmd('normal! ggO')
-          vim.cmd('normal! iusing ' .. using .. ';')
-          vim.cmd('normal! <Esc>')
-        end
-      end, vim.tbl_extend('force', opts, { desc = 'Add using statement' }))
-    end,
-  })
   
   -- Rust file detection and setup
   vim.api.nvim_create_autocmd({'BufNewFile', 'BufRead'}, {
@@ -283,11 +237,6 @@ function M.setup_autocmds()
       local cwd = vim.fn.getcwd()
       local notifications = {}
       
-      -- Check for C# projects
-      if vim.fn.glob('*.csproj', false, true)[1] or vim.fn.glob('*.sln', false, true)[1] then
-        table.insert(notifications, 'C# project detected')
-      end
-      
       -- Check for Rust projects
       if vim.fn.filereadable('Cargo.toml') == 1 then
         table.insert(notifications, 'Rust project detected')
@@ -339,12 +288,6 @@ function M.check_all_installations()
   python_lsp.check_environment()
   python_debug.check_debug_environment()
   
-  -- Check C# (basic check)
-  if vim.fn.executable("dotnet") == 1 then
-    vim.notify("✅ .NET CLI found", vim.log.levels.INFO)
-  else
-    vim.notify("❌ .NET CLI not found", vim.log.levels.WARN)
-  end
 end
 
 -- Helper to install missing tools via Mason
@@ -355,8 +298,6 @@ function M.install_missing_tools()
     "pyright", 
     "ruff-lsp",
     "debugpy",
-    "omnisharp",
-    "netcoredbg"
   }
   
   vim.notify("📦 Installing missing language tools via Mason...", vim.log.levels.INFO)
