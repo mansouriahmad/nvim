@@ -1,4 +1,4 @@
--- lua/plugins/lsp.lua
+-- lua/plugins/lsp.lua (Updated to use modular language configs)
 
 return {
   -- Mason: Portable package manager for Neovim
@@ -33,7 +33,7 @@ return {
           "jsonls",        -- JSON
           "bashls",        -- Shell scripts
           "pyright",       -- Python LSP
-          "ruff",          -- Python linter/formatter
+          "ruff_lsp",      -- Python linter/formatter
           "omnisharp",     -- C# Language Server
         },
         automatic_installation = true,
@@ -42,12 +42,11 @@ return {
       -- Auto-install debuggers based on platform
       vim.defer_fn(function()
         local mason_registry = require("mason-registry")
-        local debuggers_to_install = {}
-
-        -- Always install these
-        table.insert(debuggers_to_install, "codelldb")  -- Rust and C# (cross-platform)
-        table.insert(debuggers_to_install, "debugpy")   -- Python
-        table.insert(debuggers_to_install, "netcoredbg") -- C# (preferred for all platforms)
+        local debuggers_to_install = {
+          "codelldb",    -- Rust and C# (cross-platform)
+          "debugpy",     -- Python
+          "netcoredbg"   -- C# (preferred for all platforms)
+        }
 
         for _, debugger in ipairs(debuggers_to_install) do
           if not mason_registry.is_installed(debugger) then
@@ -70,68 +69,9 @@ return {
       { "j-hui/fidget.nvim", opts = {} },
     },
     config = function()
-      vim.lsp.set_log_level("debug") -- Set LSP logging to debug level
-
-      -- Override default LSP server configurations using handlers
-      require("mason-lspconfig").setup_handlers({
-        -- Custom handler for omnisharp
-        omnisharp = function()
-          require("lspconfig").omnisharp.setup({
-            capabilities = capabilities,
-            cmd = { vim.fn.stdpath("data") .. "/mason/bin/omnisharp", "--languageserver", "--hostPID", tostring(vim.fn.getpid()) },
-            settings = {
-              dotnet = {
-                enable = true,
-                enablePackageRestore = false, -- Explicitly disable if causing issues
-              },
-              FormattingOptions = {
-                EnableEditorConfigSupport = true,
-              },
-              Sdk = {
-                IncludePrereleases = true,
-              },
-            },
-          })
-        end,
-
-        -- Default handler for other language servers
-        -- This will be called for all other servers that don't have a custom handler
-        ["_"] = function(server_name)
-          require("lspconfig")[server_name].setup({
-            capabilities = capabilities,
-          })
-        end,
-      })
-
-      -- Helper functions
-      local function get_python_command()
-        if vim.fn.executable("python3") == 1 then
-          return "python3"
-        elseif vim.fn.executable("python") == 1 then
-          return "python"
-        else
-          vim.notify("Neither 'python3' nor 'python' found in PATH", vim.log.levels.ERROR)
-          return "python3"
-        end
-      end
-
-      local function get_pip_command()
-        if vim.fn.executable("pip3") == 1 then
-          return "pip3"
-        elseif vim.fn.executable("pip") == 1 then
-          return "pip"
-        else
-          return "pip3"
-        end
-      end
-
-      local lspconfig = require("lspconfig")
-      local configs = require("configs")
-
       -- nvim-cmp capabilities
       local capabilities = vim.lsp.protocol.make_client_capabilities()
       capabilities = require("cmp_nvim_lsp").default_capabilities(capabilities)
-      -- Enable snippets support
       capabilities.textDocument.completion.completionItem.snippetSupport = true
 
       -- Diagnostic configuration
@@ -144,14 +84,6 @@ return {
           source = "always",
           border = "rounded",
         },
-        signs = true,
-        underline = true,
-        update_in_insert = true,
-        severity_sort = true,
-      })
-
-      -- Diagnostic signs
-      vim.diagnostic.config({
         signs = {
           text = {
             [vim.diagnostic.severity.ERROR] = " ",
@@ -172,8 +104,7 @@ return {
             [vim.diagnostic.severity.HINT] = "DiagnosticSignHint",
           },
         },
-        virtual_text = true,
-        update_in_insert = false,
+        update_in_insert = true,
         severity_sort = true,
       })
 
@@ -232,70 +163,6 @@ return {
           vim.keymap.set("n", "<leader>d", vim.diagnostic.open_float, desc_opts("Show diagnostic"))
           vim.keymap.set("n", "<leader>q", vim.diagnostic.setloclist, desc_opts("Diagnostics to loclist"))
 
-          -- Rust-specific keymaps
-          if client.name == "rust_analyzer" then
-            vim.keymap.set("n", "<leader>rc", function()
-              vim.cmd("!cargo check")
-            end, desc_opts("Cargo check"))
-
-            vim.keymap.set("n", "<leader>rt", function()
-              vim.cmd("!cargo test")
-            end, desc_opts("Cargo test"))
-
-            vim.keymap.set("n", "<leader>rb", function()
-              vim.cmd("!cargo build")
-            end, desc_opts("Cargo build"))
-
-            vim.keymap.set("n", "<leader>rr", function()
-              vim.cmd("!cargo run")
-            end, desc_opts("Cargo run"))
-          end
-
-          -- Python-specific keymaps
-          if client.name == "pyright" or client.name == "ruff" then
-            local python_cmd = get_python_command()
-            local pip_cmd = get_pip_command()
-
-            vim.keymap.set("n", "<leader>po", function()
-              vim.cmd("!" .. python_cmd .. " -m py_compile " .. vim.fn.expand("%"))
-            end, desc_opts("Python syntax check"))
-
-            vim.keymap.set("n", "<leader>pr", function()
-              vim.cmd("!" .. python_cmd .. " " .. vim.fn.expand("%"))
-            end, desc_opts("Run Python file"))
-
-            vim.keymap.set("n", "<leader>pt", function()
-              vim.cmd("!" .. python_cmd .. " -m pytest")
-            end, desc_opts("Run pytest"))
-
-            vim.keymap.set("n", "<leader>pi", function()
-              vim.cmd("!" .. pip_cmd .. " install -r requirements.txt")
-            end, desc_opts("Install requirements"))
-
-            vim.keymap.set("n", "<leader>pv", function()
-              vim.cmd("!" .. python_cmd .. " -m venv .venv")
-            end, desc_opts("Create virtual environment"))
-          end
-
-          -- C# specific keymaps
-          if client.name == "omnisharp" then
-            vim.keymap.set("n", "<leader>cb", function()
-              vim.cmd("!dotnet build")
-            end, desc_opts("dotnet build"))
-
-            vim.keymap.set("n", "<leader>cr", function()
-              vim.cmd("!dotnet run")
-            end, desc_opts("dotnet run"))
-
-            vim.keymap.set("n", "<leader>ct", function()
-              vim.cmd("!dotnet test")
-            end, desc_opts("dotnet test"))
-
-            vim.keymap.set("n", "<leader>cR", function()
-              vim.cmd("!dotnet restore")
-            end, desc_opts("dotnet restore"))
-          end
-
           -- Telescope integration for LSP
           local telescope_builtin = require("telescope.builtin")
           vim.keymap.set("n", "<leader>lr", telescope_builtin.lsp_references, desc_opts("Find references"))
@@ -315,145 +182,13 @@ return {
         end,
       })
 
-      -- Custom breakpoint signs for better clarity
-      vim.fn.sign_define('DapBreakpoint', {
-        text = '🔴',
-        texthl = 'DapBreakpoint',
-        linehl = '',
-        numhl = 'DapBreakpoint'
-      })
+      -- Setup integrated language configurations
+      local integration = require('configs.lsp_debug_integration')
+      integration.setup(capabilities)
 
-      vim.fn.sign_define('DapBreakpointCondition', {
-        text = '🟡',
-        texthl = 'DapBreakpointCondition',
-        linehl = '',
-        numhl = 'DapBreakpointCondition'
-      })
-
-      vim.fn.sign_define('DapBreakpointRejected', {
-        text = '❌',
-        texthl = 'DapBreakpointRejected',
-        linehl = '',
-        numhl = 'DapBreakpointRejected'
-      })
-
-      vim.fn.sign_define('DapStopped', {
-        text = '▶️',
-        texthl = 'DapStopped',
-        linehl = 'DapStoppedLine',
-        numhl = 'DapStopped'
-      })
-
-      vim.fn.sign_define('DapLogPoint', {
-        text = '📝',
-        texthl = 'DapLogPoint',
-        linehl = '',
-        numhl = 'DapLogPoint'
-      })
-
-      -- Rust Analyzer configuration
-      lspconfig.rust_analyzer.setup({
-        capabilities = capabilities,
-        settings = {
-          ["rust-analyzer"] = {
-            cargo = {
-              allFeatures = true,
-              loadOutDirsFromCheck = true,
-              runBuildScripts = true,
-            },
-            checkOnSave = {
-              allFeatures = true,
-              command = "clippy",
-              extraArgs = { "--no-deps" },
-            },
-            procMacro = {
-              enable = true,
-              ignored = {
-                ["async-trait"] = { "async_trait" },
-                ["napi-derive"] = { "napi" },
-                ["async-recursion"] = { "async_recursion" },
-              },
-            },
-            diagnostics = {
-              enable = true,
-              experimental = {
-                enable = true,
-              },
-              disabled = false,
-              enableExperimental = true,
-            },
-            inlayHints = {
-              bindingModeHints = {
-                enable = false,
-              },
-              chainingHints = {
-                enable = true,
-              },
-              closingBraceHints = {
-                enable = true,
-                minLines = 25,
-              },
-              closureReturnTypeHints = {
-                enable = "never",
-              },
-              lifetimeElisionHints = {
-                enable = "never",
-                useParameterNames = false,
-              },
-              maxLength = 25,
-              parameterHints = {
-                enable = true,
-              },
-              reborrowHints = {
-                enable = "never",
-              },
-              renderColons = true,
-              typeHints = {
-                enable = true,
-                hideClosureInitialization = false,
-                hideNamedConstructor = false,
-              },
-            },
-          },
-        },
-        on_attach = function(client, bufnr)
-          client.server_capabilities.semanticTokensProvider = nil
-        end,
-      })
-
-      -- Python Language Server (Pyright)
-      lspconfig.pyright.setup({
-        capabilities = capabilities,
-        settings = {
-          python = {
-            analysis = {
-              typeCheckingMode = "basic",
-              autoSearchPaths = true,
-              diagnosticMode = "workspace",
-              useLibraryCodeForTypes = true,
-              autoImportCompletions = true,
-            },
-          },
-        },
-        on_attach = function(client, bufnr)
-          client.server_capabilities.documentFormattingProvider = false
-          client.server_capabilities.documentRangeFormattingProvider = false
-        end,
-      })
-
-      -- Python Linter/Formatter (Ruff)
-      lspconfig.ruff.setup({
-        capabilities = capabilities,
-        init_options = {
-          settings = {
-            args = {
-              "--line-length=88",
-              "--select=E,W,F,I",
-            },
-          },
-        },
-      })
-
+      -- Setup remaining language servers (non-language specific ones)
+      local lspconfig = require("lspconfig")
+      
       -- Lua LS for Neovim configuration
       lspconfig.lua_ls.setup({
         capabilities = capabilities,
@@ -508,7 +243,6 @@ return {
       local cmp = require("cmp")
       local luasnip = require("luasnip")
       local lspkind = require("lspkind")
-      local configs = require("configs")
 
       cmp.setup({
         snippet = {
