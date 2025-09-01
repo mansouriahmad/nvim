@@ -14,6 +14,9 @@ M.setup_csharp_ls = function(lspconfig, capabilities)
       },
     },
     on_attach = function(client, bufnr)
+      -- if client.name == "csharp_ls" then
+      --   client.server_capabilities.inlayHintProvider = false
+      -- end
       -- Optional: Disable default formatting by csharp_ls if another formatter is preferred
       -- client.server_capabilities.documentFormattingProvider = false
       -- client.server_capabilities.documentRangeFormattingProvider = false

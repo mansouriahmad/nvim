@@ -183,12 +183,6 @@ return {
           vim.keymap.set("n", "<leader>lw", telescope_builtin.lsp_workspace_symbols, desc_opts("Workspace symbols"))
 
           -- Enable inlay hints if supported (great for Rust!)
-          if client.server_capabilities.inlayHintProvider then
-            vim.lsp.inlay_hint.enable(true, { bufnr = bufnr })
-            vim.keymap.set("n", "<leader>ih", function()
-              vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled({ bufnr = bufnr }), { bufnr = bufnr })
-            end, desc_opts("Toggle inlay hints"))
-          end
         end,
       })
 
