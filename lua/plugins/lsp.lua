@@ -32,6 +32,7 @@ return {
           "yamlls",        -- YAML
           "jsonls",        -- JSON
           "bashls",        -- Shell scripts
+          "csharp_ls",     -- C# LSP
           "pyright",       -- Python LSP
           "ruff",          -- Python linter/formatter
         },
@@ -54,6 +55,7 @@ return {
       local configs = require("configs")
       local lsp_rust = require("configs.lsp.rust")
       local lsp_python = require("configs.lsp.python")
+      local lsp_csharp = require("configs.lsp.csharp")
 
       -- nvim-cmp capabilities (FIXED: moved before LSP setups)
       local capabilities = vim.lsp.protocol.make_client_capabilities()
@@ -168,6 +170,9 @@ return {
           -- Python-specific keymaps
           lsp_python.setup_keymaps(client, bufnr, desc_opts)
 
+          -- C# specific keymaps
+          lsp_csharp.setup_keymaps(client, bufnr, desc_opts)
+
           -- Telescope integration for LSP
           local telescope_builtin = require("telescope.builtin")
           vim.keymap.set("n", "<leader>lr", telescope_builtin.lsp_references, desc_opts("Find references"))
@@ -195,6 +200,9 @@ return {
 
       -- Python Linter/Formatter (Ruff) - super fast Python tooling
       lsp_python.setup_ruff(lspconfig, capabilities)
+
+      -- C# Language Server (csharp_ls)
+      lsp_csharp.setup_csharp_ls(lspconfig, capabilities)
 
       -- Lua LS for Neovim configuration
       lspconfig.lua_ls.setup({
