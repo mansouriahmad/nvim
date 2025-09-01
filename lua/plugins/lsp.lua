@@ -48,33 +48,12 @@ return {
       "williamboman/mason-lspconfig.nvim",
       "hrsh7th/cmp-nvim-lsp", -- LSP source for nvim-cmp
       -- Useful status updates for LSP
-      { "j-hui/fidget.nvim", opts = {} },
     },
     config = function()
-      -- FIXED: Helper functions moved to the top
-      local function get_python_command()
-        if vim.fn.executable("python3") == 1 then
-          return "python3"
-        elseif vim.fn.executable("python") == 1 then
-          return "python"
-        else
-          vim.notify("Neither 'python3' nor 'python' found in PATH", vim.log.levels.ERROR)
-          return "python3"
-        end
-      end
-
-      local function get_pip_command()
-        if vim.fn.executable("pip3") == 1 then
-          return "pip3"
-        elseif vim.fn.executable("pip") == 1 then
-          return "pip"
-        else
-          return "pip3"
-        end
-      end
-
       local lspconfig = require("lspconfig")
       local configs = require("configs")
+      local lsp_rust = require("configs.lsp.rust")
+      local lsp_python = require("configs.lsp.python")
 
       -- nvim-cmp capabilities (FIXED: moved before LSP setups)
       local capabilities = vim.lsp.protocol.make_client_capabilities()
@@ -92,18 +71,41 @@ return {
           source = "always",
           border = "rounded",
         },
-        signs = true,
         underline = true,
         update_in_insert = true, -- CHANGED: This enables diagnostics while typing
         severity_sort = true,
+        signs = {
+          -- Configuration for the signs displayed in the sign column
+          -- See :help vim.diagnostic.config for more details
+          text = {
+            [vim.diagnostic.severity.ERROR] = "  ", -- Error sign
+            [vim.diagnostic.severity.WARN] = "  ",  -- Warning sign
+            [vim.diagnostic.severity.HINT] = "󰠠 ",  -- Hint sign
+            [vim.diagnostic.severity.INFO] = "  ",  -- Info sign
+          },
+          -- Customize the highlight groups for diagnostic signs
+          -- Example: highlight groups for Dap signs (if you move them here)
+          -- text_hl = {
+          --   DapBreakpoint = "DapBreakpoint",
+          --   DapBreakpointCondition = "DapBreakpointCondition",
+          --   DapBreakpointRejected = "DapBreakpointRejected",
+          --   DapStopped = "DapStopped",
+          --   DapLogPoint = "DapLogPoint",
+          -- },
+          num_hl = {
+            [vim.diagnostic.severity.ERROR] = "DiagnosticSignError",
+            [vim.diagnostic.severity.WARN] = "DiagnosticSignWarn",
+            [vim.diagnostic.severity.HINT] = "DiagnosticSignHint",
+            [vim.diagnostic.severity.INFO] = "DiagnosticSignInfo",
+          },
+          line_hl = {
+            [vim.diagnostic.severity.ERROR] = "DiagnosticVirtualTextError",
+            [vim.diagnostic.severity.WARN] = "DiagnosticVirtualTextWarn",
+            [vim.diagnostic.severity.HINT] = "DiagnosticVirtualTextHint",
+            [vim.diagnostic.severity.INFO] = "DiagnosticVirtualTextInfo",
+          },
+        },
       })
-
-      -- Diagnostic signs
-      local signs = { Error = " ", Warn = " ", Hint = "󰠠 ", Info = " " }
-      for type, icon in pairs(signs) do
-        local hl = "DiagnosticSign" .. type
-        vim.fn.sign_define(hl, { text = icon, texthl = hl, numhl = "" })
-      end
 
       -- Add border to hover and signature help
       vim.lsp.handlers["textDocument/hover"] = vim.lsp.with(
@@ -161,49 +163,10 @@ return {
           vim.keymap.set("n", "<leader>q", vim.diagnostic.setloclist, desc_opts("Diagnostics to loclist"))
 
           -- Rust-specific keymaps
-          if client.name == "rust_analyzer" then
-            vim.keymap.set("n", "<leader>rc", function()
-              vim.cmd("!cargo check")
-            end, desc_opts("Cargo check"))
+          lsp_rust.setup_keymaps(client, bufnr, desc_opts)
 
-            vim.keymap.set("n", "<leader>rt", function()
-              vim.cmd("!cargo test")
-            end, desc_opts("Cargo test"))
-
-            vim.keymap.set("n", "<leader>rb", function()
-              vim.cmd("!cargo build")
-            end, desc_opts("Cargo build"))
-
-            vim.keymap.set("n", "<leader>rr", function()
-              vim.cmd("!cargo run")
-            end, desc_opts("Cargo run"))
-          end
-
-          -- Python-specific keymaps (FIXED: functions now defined above)
-          if client.name == "pyright" or client.name == "ruff" then
-            local python_cmd = get_python_command()
-            local pip_cmd = get_pip_command()
-
-            vim.keymap.set("n", "<leader>po", function()
-              vim.cmd("!" .. python_cmd .. " -m py_compile " .. vim.fn.expand("%"))
-            end, desc_opts("Python syntax check"))
-
-            vim.keymap.set("n", "<leader>pr", function()
-              vim.cmd("!" .. python_cmd .. " " .. vim.fn.expand("%"))
-            end, desc_opts("Run Python file"))
-
-            vim.keymap.set("n", "<leader>pt", function()
-              vim.cmd("!" .. python_cmd .. " -m pytest")
-            end, desc_opts("Run pytest"))
-
-            vim.keymap.set("n", "<leader>pi", function()
-              vim.cmd("!" .. pip_cmd .. " install -r requirements.txt")
-            end, desc_opts("Install requirements"))
-
-            vim.keymap.set("n", "<leader>pv", function()
-              vim.cmd("!" .. python_cmd .. " -m venv .venv")
-            end, desc_opts("Create virtual environment"))
-          end
+          -- Python-specific keymaps
+          lsp_python.setup_keymaps(client, bufnr, desc_opts)
 
           -- Telescope integration for LSP
           local telescope_builtin = require("telescope.builtin")
@@ -224,153 +187,14 @@ return {
         end,
       })
 
-      -- Custom breakpoint signs for better clarity
-      vim.fn.sign_define('DapBreakpoint', {
-        text = '🔴', -- Red circle for breakpoint
-        texthl = 'DapBreakpoint',
-        linehl = '',
-        numhl = 'DapBreakpoint'
-      })
-
-      vim.fn.sign_define('DapBreakpointCondition', {
-        text = '🟡', -- Yellow circle for conditional breakpoint
-        texthl = 'DapBreakpointCondition',
-        linehl = '',
-        numhl = 'DapBreakpointCondition'
-      })
-
-      vim.fn.sign_define('DapBreakpointRejected', {
-        text = '❌', -- X for rejected/invalid breakpoint
-        texthl = 'DapBreakpointRejected',
-        linehl = '',
-        numhl = 'DapBreakpointRejected'
-      })
-
-      vim.fn.sign_define('DapStopped', {
-        text = '▶️', -- Play button for current execution point
-        texthl = 'DapStopped',
-        linehl = 'DapStoppedLine',
-        numhl = 'DapStopped'
-      })
-
-      vim.fn.sign_define('DapLogPoint', {
-        text = '📝', -- Note for log points
-        texthl = 'DapLogPoint',
-        linehl = '',
-        numhl = 'DapLogPoint'
-      })
-
-
       -- Rust Analyzer configuration
-      lspconfig.rust_analyzer.setup({
-        capabilities = capabilities,
-        settings = {
-          ["rust-analyzer"] = {
-            cargo = {
-              allFeatures = true,
-              loadOutDirsFromCheck = true,
-              runBuildScripts = true,
-            },
-            -- Check on save with clippy
-            checkOnSave = {
-              allFeatures = true,
-              command = "clippy",
-              extraArgs = { "--no-deps" },
-            },
-            procMacro = {
-              enable = true,
-              ignored = {
-                ["async-trait"] = { "async_trait" },
-                ["napi-derive"] = { "napi" },
-                ["async-recursion"] = { "async_recursion" },
-              },
-            },
-            -- Real-time diagnostics configuration
-            diagnostics = {
-              enable = true,
-              experimental = {
-                enable = true,
-              },
-              disabled = false,
-              enableExperimental = true,
-            },
-            -- Inlay hints configuration
-            inlayHints = {
-              bindingModeHints = {
-                enable = false,
-              },
-              chainingHints = {
-                enable = true,
-              },
-              closingBraceHints = {
-                enable = true,
-                minLines = 25,
-              },
-              closureReturnTypeHints = {
-                enable = "never",
-              },
-              lifetimeElisionHints = {
-                enable = "never",
-                useParameterNames = false,
-              },
-              maxLength = 25,
-              parameterHints = {
-                enable = true,
-              },
-              reborrowHints = {
-                enable = "never",
-              },
-              renderColons = true,
-              typeHints = {
-                enable = true,
-                hideClosureInitialization = false,
-                hideNamedConstructor = false,
-              },
-            },
-          },
-        },
-        -- Additional rust-analyzer specific options
-        on_attach = function(client, bufnr)
-          -- Request semantic tokens for better highlighting
-          client.server_capabilities.semanticTokensProvider = nil
-        end,
-      })
+      lsp_rust.setup_rust_analyzer(lspconfig, capabilities)
 
       -- Python Language Server (Pyright)
-      lspconfig.pyright.setup({
-        capabilities = capabilities,
-        settings = {
-          python = {
-            analysis = {
-              typeCheckingMode = "basic",   -- "off", "basic", "strict"
-              autoSearchPaths = true,
-              diagnosticMode = "workspace", -- "openFilesOnly" or "workspace"
-              useLibraryCodeForTypes = true,
-              autoImportCompletions = true,
-            },
-          },
-        },
-        -- Python-specific on_attach
-        on_attach = function(client, bufnr)
-          -- Disable Pyright's formatting in favor of Ruff
-          client.server_capabilities.documentFormattingProvider = false
-          client.server_capabilities.documentRangeFormattingProvider = false
-        end,
-      })
+      lsp_python.setup_pyright(lspconfig, capabilities)
 
       -- Python Linter/Formatter (Ruff) - super fast Python tooling
-      lspconfig.ruff.setup({
-        capabilities = capabilities,
-        init_options = {
-          settings = {
-            -- Ruff settings
-            args = {
-              "--line-length=88", -- Black-compatible line length
-              "--select=E,W,F,I", -- Error, Warning, pyFlakes, Import sorting
-            },
-          },
-        },
-      })
+      lsp_python.setup_ruff(lspconfig, capabilities)
 
       -- Lua LS for Neovim configuration
       lspconfig.lua_ls.setup({
@@ -505,71 +329,6 @@ return {
         }, {
           { name = "cmdline" },
         }),
-      })
-    end,
-  },
-
-  -- Better Rust tools
-  {
-    "simrat39/rust-tools.nvim",
-    ft = "rust",
-    dependencies = { "neovim/nvim-lspconfig" },
-    config = function()
-      local rt = require("rust-tools")
-      rt.setup({
-        server = {
-          on_attach = function(_, bufnr)
-            -- Rust-specific keybindings
-            vim.keymap.set("n", "<leader>rh", rt.hover_actions.hover_actions,
-              { buffer = bufnr, desc = "Rust hover actions" })
-            vim.keymap.set("n", "<leader>ra", rt.code_action_group.code_action_group,
-              { buffer = bufnr, desc = "Rust code action group" })
-          end,
-        },
-        tools = {
-          hover_actions = {
-            auto_focus = true,
-          },
-        },
-      })
-    end,
-  },
-
-  -- Crate management for Cargo.toml
-  {
-    "saecki/crates.nvim",
-    ft = { "toml" },
-    dependencies = { "nvim-lua/plenary.nvim" },
-    config = function()
-      require("crates").setup({
-        null_ls = {
-          enabled = true,
-          name = "crates.nvim",
-        },
-        popup = {
-          autofocus = true,
-          border = "rounded",
-        },
-      })
-      -- Keymaps for crate management
-      vim.api.nvim_create_autocmd("BufRead", {
-        group = vim.api.nvim_create_augroup("CratesKeymaps", { clear = true }),
-        pattern = "Cargo.toml",
-        callback = function()
-          local crates = require("crates")
-          local opts = { noremap = true, silent = true, buffer = true }
-          vim.keymap.set("n", "<leader>ct", crates.toggle, opts)
-          vim.keymap.set("n", "<leader>cr", crates.reload, opts)
-          vim.keymap.set("n", "<leader>cv", crates.show_versions_popup, opts)
-          vim.keymap.set("n", "<leader>cf", crates.show_features_popup, opts)
-          vim.keymap.set("n", "<leader>cd", crates.show_dependencies_popup, opts)
-          vim.keymap.set("n", "<leader>cu", crates.update_crate, opts)
-          vim.keymap.set("v", "<leader>cu", crates.update_crates, opts)
-          vim.keymap.set("n", "<leader>ca", crates.update_all_crates, opts)
-          vim.keymap.set("n", "<leader>cU", crates.upgrade_crate, opts)
-          vim.keymap.set("v", "<leader>cU", crates.upgrade_crates, opts)
-          vim.keymap.set("n", "<leader>cA", crates.upgrade_all_crates, opts)
-        end,
       })
     end,
   },
