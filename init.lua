@@ -9,6 +9,8 @@ require 'lazy-bootstrap'
 require 'lazy-plugins'
 require 'selected-theme'
 
+local project = require("utils.project")
+
 -- Load enhanced utilities
 -- local performance = require('utils.performance')
 -- local project = require('utils.project')
@@ -75,7 +77,7 @@ vim.api.nvim_create_autocmd("VimEnter", {
         }
         
         -- Add LSP info
-        local active_clients = vim.lsp.get_active_clients()
+        local active_clients = vim.lsp.get_clients()
         if #active_clients > 0 then
           local client_names = {}
           for _, client in ipairs(active_clients) do

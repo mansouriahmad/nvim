@@ -1,5 +1,20 @@
 return {
   {
+    'tiagovla/tokyodark.nvim'
+  },
+  {
+    'rebelot/kanagawa.nvim'
+  },
+  {
+    'rose-pine/neovim'
+  },
+  {
+    'nvimdev/zephyr-nvim'
+  },
+  {
+    'mhartington/oceanic-next'
+  },
+  {
     'sainnhe/everforest'
   },
   {
@@ -69,8 +84,8 @@ return {
         invert_selection = false,
         invert_signs = false,
         invert_tabline = false,
-        inverse = true, -- invert background for search, diffs, statuslines and errors
-        contrast = "hard",  -- can be "hard", "soft" or empty string
+        inverse = true,    -- invert background for search, diffs, statuslines and errors
+        contrast = "hard", -- can be "hard", "soft" or empty string
         palette_overrides = {},
         overrides = {},
         dim_inactive = false,
