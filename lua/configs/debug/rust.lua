@@ -8,6 +8,11 @@ return {
         command = vim.fn.stdpath("data") .. "/mason/bin/codelldb",
         args = { "--port", "${port}" },
       },
+      -- Add initCommands for better string visualization
+      initCommands = {
+        "settings set target.prefer-dynamic-values false",
+        "settings set expression.debug true",
+      },
     }
   end,
 

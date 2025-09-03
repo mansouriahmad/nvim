@@ -92,9 +92,11 @@ return {
       end
       dap.listeners.before.event_terminated.dapui_config = function()
         dapui.close()
+        vim.notify("Debug session completed", vim.log.levels.INFO)
       end
       dap.listeners.before.event_exited.dapui_config = function()
         dapui.close()
+        vim.notify("Debug session completed", vim.log.levels.INFO)
       end
 
       -- codelldb adapter for Rust
@@ -148,6 +150,11 @@ return {
                       cwd = '${workspaceFolder}',
                       stopOnEntry = false,
                       args = {},
+                      initCommands = (function()
+                        local sysroot = vim.fn.system("rustc --print sysroot"):gsub("%s+$", "")
+                        local script = sysroot .. "/lib/rustlib/etc/lldb_lookup.py"
+                        return { "command script import " .. script }
+                      end)(),
                     })
                   else
                     vim.notify('No Rust executable found after build.', vim.log.levels.ERROR)
@@ -251,4 +258,3 @@ return {
     end,
   },
 }
-

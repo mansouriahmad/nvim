@@ -16,10 +16,10 @@ M.setup_adapter = function(dap)
   local netcoredbg_command
   local platform = get_platform()
 
-  if platform == "windows" or platform == "linux" then
+  if platform == "macos" then
+    netcoredbg_command = "/Users/ahmad/netcoredbg-macOS-arm64.nvim/netcoredbg/netcoredbg"
+  else
     netcoredbg_command = vim.fn.stdpath("data") .. "/mason/bin/netcoredbg"
-  else -- macOS
-    netcoredbg_command = "netcoredbg"
   end
 
   dap.adapters.coreclr = {
@@ -217,16 +217,15 @@ end
 
 M.check_and_install_debugger = function()
   local platform = get_platform()
+  local netcoredbg_command
   if platform == "macos" then
-    if vim.fn.executable("netcoredbg") == 0 then
-      vim.notify("netcoredbg not found in PATH. Please ensure it is installed and available.", vim.log.levels.ERROR)
-    end
-  else -- Windows or Linux
-    local mason_netcoredbg_path = vim.fn.stdpath("data") .. "/mason/bin/netcoredbg"
-    if vim.fn.executable(mason_netcoredbg_path) == 0 then
-      vim.notify("netcoredbg not found. Installing via Mason...", vim.log.levels.WARN)
-      vim.cmd("MasonInstall netcoredbg")
-    end
+    netcoredbg_command = "/Users/ahmad/netcoredbg-macOS-arm64.nvim/netcoredbg/netcoredbg"
+  elseif platform == "windows" or platform == "linux" then
+    netcoredbg_command = vim.fn.stdpath("data") .. "/mason/bin/netcoredbg"
+  end
+
+  if vim.fn.executable(netcoredbg_command) == 0 then
+    vim.notify("netcoredbg not found. Please ensure it is installed and available.", vim.log.levels.ERROR)
   end
 end
 

@@ -1,5 +1,11 @@
 return {
   {
+    "theHamsta/nvim-dap-virtual-text",
+    opts = {
+      commented = true, -- prefix with // for clarity
+    },
+  },
+  {
     'nvim-pack/nvim-spectre',
     keys = {
       { '<leader>S', function() require('spectre').open() end, desc = 'Open Spectre (Search & Replace)' },
