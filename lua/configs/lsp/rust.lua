@@ -1,81 +1,5 @@
 return {
   -- Rust Analyzer configuration
-  setup_rust_analyzer = function(lspconfig, capabilities)
-    lspconfig.rust_analyzer.setup({
-      capabilities = capabilities,
-      settings = {
-        ["rust-analyzer"] = {
-          cargo = {
-            allFeatures = true,
-            loadOutDirsFromCheck = true,
-            runBuildScripts = true,
-          },
-          -- Check on save with clippy
-          check = {
-            enable = true,
-            command = "clippy",
-            extraArgs = { "--no-deps" },
-            allFeatures = true,
-          },
-          procMacro = {
-            enable = true,
-            ignored = {
-              ["async-trait"] = { "async_trait" },
-              ["napi-derive"] = { "napi" },
-              ["async-recursion"] = { "async_recursion" },
-            },
-          },
-          -- Real-time diagnostics configuration
-          diagnostics = {
-            enable = true,
-            experimental = {
-              enable = true,
-            },
-            disabled = {},
-            enableExperimental = true,
-          },
-          -- Inlay hints configuration
-          inlayHints = {
-            bindingModeHints = {
-              enable = false,
-            },
-            chainingHints = {
-              enable = false,
-            },
-            closingBraceHints = {
-              enable = false,
-              minLines = 25,
-            },
-            closureReturnTypeHints = {
-              enable = "never",
-            },
-            lifetimeElisionHints = {
-              enable = "never",
-              useParameterNames = false,
-            },
-            maxLength = 25,
-            parameterHints = {
-              enable = false,
-            },
-            reborrowHints = {
-              enable = "never",
-            },
-            renderColons = true,
-            typeHints = {
-              enable = false,
-              hideClosureInitialization = false,
-              hideNamedConstructor = false,
-            },
-          },
-        },
-      },
-      -- Additional rust-analyzer specific options
-      on_attach = function(client, bufnr)
-        -- Request semantic tokens for better highlighting
-      end,
-    })
-  end,
-
   -- Better Rust tools
   plugins = {
     {
@@ -84,25 +8,100 @@ return {
       dependencies = { "neovim/nvim-lspconfig" },
       config = function()
         local rt = require("rust-tools")
+
+        -- Get capabilities for nvim-cmp integration
+        local capabilities = vim.lsp.protocol.make_client_capabilities()
+        capabilities = require("cmp_nvim_lsp").default_capabilities(capabilities)
+
         rt.setup({
           server = {
-            on_attach = function(_, bufnr)
-              -- Rust-specific keybindings
+            capabilities = capabilities, -- Add this line
+            on_attach = function(client, bufnr)
+              -- Rust-tools specific keymaps
               vim.keymap.set("n", "<leader>rh", rt.hover_actions.hover_actions,
                 { buffer = bufnr, desc = "Rust hover actions" })
               vim.keymap.set("n", "<leader>ra", rt.code_action_group.code_action_group,
                 { buffer = bufnr, desc = "Rust code action group" })
+
+              -- Standard Rust keymaps
+              local opts = { buffer = bufnr, noremap = true, silent = true }
+
+              vim.keymap.set("n", "<leader>rc", function()
+                vim.cmd("!cargo check")
+              end, vim.tbl_extend('force', opts, { desc = "Cargo check" }))
+
+              vim.keymap.set("n", "<leader>rb", function()
+                vim.cmd("!cargo build")
+              end, vim.tbl_extend('force', opts, { desc = "Cargo build" }))
+
+              vim.keymap.set("n", "<leader>rr", function()
+                vim.cmd("!cargo run")
+              end, vim.tbl_extend('force', opts, { desc = "Cargo run" }))
+
+              vim.keymap.set("n", "<leader>rt", function()
+                vim.cmd("!cargo test")
+              end, vim.tbl_extend('force', opts, { desc = "Cargo test" }))
             end,
+            settings = {
+              ["rust-analyzer"] = {
+                -- Important: Disable duplicate diagnostics
+                diagnostics = {
+                  enable = true,
+                  experimental = {
+                    enable = false, -- Disable experimental features that might cause duplicates
+                  },
+                },
+                completion = {
+                  postfix = {
+                    enable = true,
+                  },
+                  autoimport = {
+                    enable = true,
+                  },
+                  -- Prevent duplicate completions
+                  callable = {
+                    snippets = "fill_arguments",
+                  },
+                },
+                -- Reduce noise
+                lens = {
+                  enable = true,
+                  methodReferences = true,
+                  references = true,
+                },
+                inlayHints = {
+                  typeHints = {
+                    enable = true,
+                    hideClosureInitialization = false,
+                    hideNamedConstructor = false,
+                  },
+                  parameterHints = {
+                    enable = true,
+                  },
+                  chainingHints = {
+                    enable = true,
+                  },
+                },
+                checkOnSave = {
+                  command = "clippy",
+                },
+              },
+            },
           },
           tools = {
             hover_actions = {
               auto_focus = true,
             },
+            inlay_hints = {
+              auto = true,
+              show_parameter_hints = false, -- Prevent duplicate parameter hints
+              parameter_hints_prefix = "<- ",
+              other_hints_prefix = "=> ",
+            },
           },
         })
       end,
     },
-
     -- Crate management for Cargo.toml
     {
       "saecki/crates.nvim",
@@ -161,4 +160,3 @@ return {
     end
   end,
 }
-
