@@ -17,6 +17,8 @@ end
 local function find_executable(name, additional_paths)
   additional_paths = additional_paths or {}
   
+  print("Searching for executable: " .. name)
+  
   -- First check if it's in PATH
   local path_exe = vim.fn.exepath(name)
   if path_exe ~= "" then
@@ -26,6 +28,7 @@ local function find_executable(name, additional_paths)
   -- Check additional paths
   for _, path in ipairs(additional_paths) do
     local full_path = path .. "/" .. name
+    print("Checking additional path: " .. full_path)
     if vim.fn.executable(full_path) == 1 then
       return full_path
     end
@@ -57,7 +60,9 @@ local function find_omnisharp()
     table.insert(omnisharp_paths, os.getenv("HOME") .. "/.local/bin/omnisharp")
   end
   
-  return find_executable("omnisharp", omnisharp_paths)
+  local omnisharp_cmd = find_executable("omnisharp", omnisharp_paths)
+  print("OmniSharp command found: " .. tostring(omnisharp_cmd))
+  return omnisharp_cmd
 end
 
 -- Get C# project information
