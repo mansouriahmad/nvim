@@ -168,7 +168,6 @@ end, { desc = 'Smart home' })
 
 -- Better paragraph navigation
 vim.keymap.set({'n', 'v'}, 'J', '5j', { desc = 'Jump down 5 lines' })
-vim.keymap.set({'n', 'v'}, 'K', '5k', { desc = 'Jump up 5 lines' })
 
 -- Quick word replacement
 vim.keymap.set('n', '<leader>rw', function()
@@ -264,6 +263,11 @@ vim.keymap.set('n', '<leader>fd', function()
     end
   end
 end, { desc = 'Delete current file' })
+
+-- Formatting
+vim.keymap.set('n', '<leader>F', function()
+  vim.lsp.buf.format({ async = true })
+end, { desc = 'Format document' })
 
 -- Open file explorer at current file location
 vim.keymap.set('n', '<leader>fo', function()
