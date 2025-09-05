@@ -16,24 +16,21 @@ end
 -- Robust path finder for executables
 local function find_executable(name, additional_paths)
   additional_paths = additional_paths or {}
-  
-  print("Searching for executable: " .. name)
-  
+
   -- First check if it's in PATH
   local path_exe = vim.fn.exepath(name)
   if path_exe ~= "" then
     return path_exe
   end
-  
+
   -- Check additional paths
   for _, path in ipairs(additional_paths) do
     local full_path = path .. "/" .. name
-    print("Checking additional path: " .. full_path)
     if vim.fn.executable(full_path) == 1 then
       return full_path
     end
   end
-  
+
   return nil
 end
 
@@ -41,28 +38,26 @@ end
 local function find_omnisharp()
   local platform = get_platform()
   local mason_path = vim.fn.stdpath("data") .. "/mason"
-  
+
   local omnisharp_paths = {
-    mason_path .. "/bin/omnisharp",
-    mason_path .. "/packages/omnisharp/omnisharp",
+    mason_path .. "/bin",
+    mason_path .. "/packages/omnisharp",
   }
-  
+
   if platform == "windows" then
-    table.insert(omnisharp_paths, mason_path .. "/bin/omnisharp.exe")
-    table.insert(omnisharp_paths, mason_path .. "/packages/omnisharp/omnisharp.exe")
+    table.insert(omnisharp_paths, mason_path .. "/bin")
+    table.insert(omnisharp_paths, mason_path .. "/packages/omnisharp")
     -- Add common Windows paths
-    table.insert(omnisharp_paths, "C:/Program Files/OmniSharp/OmniSharp.exe")
-    table.insert(omnisharp_paths, os.getenv("USERPROFILE") .. "/.local/bin/omnisharp.exe")
+    table.insert(omnisharp_paths, "C:/Program Files/OmniSharp")
+    table.insert(omnisharp_paths, os.getenv("USERPROFILE") .. "/.local/bin")
   else
     -- Add common Unix paths
-    table.insert(omnisharp_paths, "/usr/local/bin/omnisharp")
-    table.insert(omnisharp_paths, "/opt/homebrew/bin/omnisharp")
-    table.insert(omnisharp_paths, os.getenv("HOME") .. "/.local/bin/omnisharp")
+    table.insert(omnisharp_paths, "/usr/local/bin")
+    table.insert(omnisharp_paths, "/opt/homebrew/bin")
+    table.insert(omnisharp_paths, os.getenv("HOME") .. "/.local/bin")
   end
-  
-  local omnisharp_cmd = find_executable("omnisharp", omnisharp_paths)
-  print("OmniSharp command found: " .. tostring(omnisharp_cmd))
-  return omnisharp_cmd
+
+  return find_executable("omnisharp", omnisharp_paths)
 end
 
 -- Get C# project information
@@ -116,11 +111,10 @@ function M.setup_lsp(capabilities)
   local lspconfig = require("lspconfig")
   
   -- Try to find OmniSharp first
-  local omnisharp_cmd = find_omnisharp()
-  
-  if omnisharp_cmd then
-    vim.notify("Found OmniSharp at: " .. omnisharp_cmd, vim.log.levels.INFO)
-    
+  local omnisharp_cmd = vim.fn.expand("~/.local/share/nvim/mason/packages/omnisharp/OmniSharp")
+
+  if vim.fn.filereadable(omnisharp_cmd) == 1 then
+    vim.notify("Using explicit OmniSharp path: " .. omnisharp_cmd, vim.log.levels.INFO)
     lspconfig.omnisharp.setup({
       capabilities = capabilities,
       cmd = { 
@@ -233,4 +227,5 @@ function M.build_project(project_info, callback)
 end
 
 return M
+
 

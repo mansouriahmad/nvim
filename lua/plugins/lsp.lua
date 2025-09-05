@@ -32,7 +32,6 @@ return {
           "yamlls",        -- YAML
           "jsonls",        -- JSON
           "bashls",        -- Shell scripts
-          "csharp_ls",     -- C# LSP
           "pyright",       -- Python LSP
           "ruff",          -- Python linter/formatter
         },
