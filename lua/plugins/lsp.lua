@@ -183,13 +183,13 @@ return {
       })
 
       -- Rust Analyzer configuration
-      -- lsp_rust.setup_rust_analyzer(lspconfig, capabilities)
+      lsp_rust.setup_lsp(capabilities)
 
       -- Python Language Server (Pyright)
-      lsp_python.setup_pyright(lspconfig, capabilities)
+      lsp_python.setup_lsp(capabilities)
 
       -- Python Linter/Formatter (Ruff) - super fast Python tooling
-      lsp_python.setup_ruff(lspconfig, capabilities)
+      -- lsp_python.setup_ruff(lspconfig, capabilities)
 
       -- C# Language Server (csharp_ls)
       lsp_csharp.setup_lsp(capabilities)

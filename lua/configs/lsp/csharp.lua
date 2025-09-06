@@ -1,67 +1,35 @@
-
 -- lua/configs/lsp/csharp.lua
+-- Simplified C# LSP configuration using platform_config
+
 local M = {}
+local platform_config = require('configs.lsp.platform_config')
 
--- Helper function to detect platform
-local function get_platform()
-  if vim.fn.has("win32") == 1 or vim.fn.has("win64") == 1 then
-    return "windows"
-  elseif vim.fn.has("macunix") == 1 then
-    return "macos" 
-  else
-    return "linux"
+-- Setup C# LSP
+function M.setup_lsp(capabilities)
+  local lspconfig = require("lspconfig")
+  
+  -- Use the platform-specific setup
+  local success = platform_config.setup_csharp_lsp(lspconfig, capabilities)
+  
+  if success then
+    -- Additional C#-specific setup if needed
+    vim.api.nvim_create_autocmd("BufReadPost", {
+      pattern = { "*.cs", "*.csx", "*.cake" },
+      callback = function()
+        -- Set C#-specific options
+        vim.opt_local.commentstring = '// %s'
+        vim.opt_local.shiftwidth = 4
+        vim.opt_local.tabstop = 4
+        vim.opt_local.expandtab = true
+      end,
+    })
   end
-end
-
--- Robust path finder for executables
-local function find_executable(name, additional_paths)
-  additional_paths = additional_paths or {}
-
-  -- First check if it's in PATH
-  local path_exe = vim.fn.exepath(name)
-  if path_exe ~= "" then
-    return path_exe
-  end
-
-  -- Check additional paths
-  for _, path in ipairs(additional_paths) do
-    local full_path = path .. "/" .. name
-    if vim.fn.executable(full_path) == 1 then
-      return full_path
-    end
-  end
-
-  return nil
-end
-
--- Find OmniSharp executable with robust path detection
-local function find_omnisharp()
-  local platform = get_platform()
-  local mason_path = vim.fn.stdpath("data") .. "/mason"
-
-  local omnisharp_paths = {
-    mason_path .. "/bin",
-    mason_path .. "/packages/omnisharp",
-  }
-
-  if platform == "windows" then
-    table.insert(omnisharp_paths, mason_path .. "/bin")
-    table.insert(omnisharp_paths, mason_path .. "/packages/omnisharp")
-    -- Add common Windows paths
-    table.insert(omnisharp_paths, "C:/Program Files/OmniSharp")
-    table.insert(omnisharp_paths, os.getenv("USERPROFILE") .. "/.local/bin")
-  else
-    -- Add common Unix paths
-    table.insert(omnisharp_paths, "/usr/local/bin")
-    table.insert(omnisharp_paths, "/opt/homebrew/bin")
-    table.insert(omnisharp_paths, os.getenv("HOME") .. "/.local/bin")
-  end
-
-  return find_executable("omnisharp", omnisharp_paths)
+  
+  return success
 end
 
 -- Get C# project information
-local function get_csharp_project_info()
+function M.get_project_info()
   local cwd = vim.fn.getcwd()
   
   -- Find solution files
@@ -70,127 +38,92 @@ local function get_csharp_project_info()
   -- Find project files
   local csproj_files = vim.fn.glob(cwd .. "/**/*.csproj", false, true)
   
+  local project_file = nil
+  local project_name = nil
+  local project_dir = cwd
+  local project_type = nil
+  
+  -- Prioritize solution files
   if #sln_files > 0 then
-    return {
-      type = "solution",
-      file = sln_files[1],
-      name = vim.fn.fnamemodify(sln_files[1], ":t:r"),
-      directory = vim.fn.fnamemodify(sln_files[1], ":h")
-    }
-  elseif #csproj_files > 0 then
-    -- Find the main executable project
+    project_file = sln_files[1]
+    project_name = vim.fn.fnamemodify(project_file, ":t:r")
+    project_type = "solution"
+    
+    -- Find executable project within solution
     for _, csproj in ipairs(csproj_files) do
       local content = vim.fn.readfile(csproj)
       for _, line in ipairs(content) do
-        if line:match("<OutputType>Exe</OutputType>") or 
-           line:match("Microsoft%.AspNetCore%.App") then
-          return {
-            type = "project", 
-            file = csproj,
-            name = vim.fn.fnamemodify(csproj, ":t:r"),
-            directory = vim.fn.fnamemodify(csproj, ":h")
-          }
+        if line:match("<OutputType>Exe</OutputType>") then
+          project_file = csproj
+          project_name = vim.fn.fnamemodify(csproj, ":t:r")
+          project_dir = vim.fn.fnamemodify(csproj, ":h")
+          project_type = "console"
+          break
+        elseif line:match("Microsoft%.AspNetCore%.App") then
+          project_file = csproj
+          project_name = vim.fn.fnamemodify(csproj, ":t:r")
+          project_dir = vim.fn.fnamemodify(csproj, ":h")
+          project_type = "web"
+          break
         end
       end
     end
+  elseif #csproj_files > 0 then
+    project_file = csproj_files[1]
+    project_name = vim.fn.fnamemodify(project_file, ":t:r")
+    project_dir = vim.fn.fnamemodify(project_file, ":h")
     
-    -- Default to first project if no executable found
-    return {
-      type = "project",
-      file = csproj_files[1], 
-      name = vim.fn.fnamemodify(csproj_files[1], ":t:r"),
-      directory = vim.fn.fnamemodify(csproj_files[1], ":h")
-    }
-  end
-  
-  return nil
-end
-
--- Setup C# LSP
-function M.setup_lsp(capabilities)
-  local lspconfig = require("lspconfig")
-  
-  -- Try to find OmniSharp first
-  local omnisharp_cmd = vim.fn.expand("~/.local/share/nvim/mason/packages/omnisharp/OmniSharp")
-
-  if vim.fn.filereadable(omnisharp_cmd) == 1 then
-    vim.notify("Using explicit OmniSharp path: " .. omnisharp_cmd, vim.log.levels.INFO)
-    lspconfig.omnisharp.setup({
-      capabilities = capabilities,
-      cmd = { 
-        omnisharp_cmd, 
-        "--languageserver", 
-        "--hostPID", tostring(vim.fn.getpid()) 
-      },
-      root_dir = function(fname)
-        local primary = lspconfig.util.root_pattern("*.sln")(fname)
-        local fallback = lspconfig.util.root_pattern("*.csproj", "omnisharp.json", "function.json")(fname)
-        return primary or fallback
-      end,
-      settings = {
-        FormattingOptions = {
-          EnableEditorConfigSupport = true,
-          OrganizeImports = true,
-        },
-        MsBuild = {
-          LoadProjectsOnDemand = false,
-        },
-        RoslynExtensionsOptions = {
-          EnableAnalyzersSupport = true,
-          EnableImportCompletion = true,
-          AnalyzeOpenDocumentsOnly = false,
-        },
-        Sdk = {
-          IncludePrereleases = true,
-        },
-      },
-      on_attach = function(client, bufnr)
-        -- C# specific keymaps
-        local opts = { buffer = bufnr, noremap = true, silent = true }
-        
-        vim.keymap.set("n", "<leader>cb", function()
-          vim.cmd("!dotnet build")
-        end, vim.tbl_extend('force', opts, { desc = "dotnet build" }))
-        
-        vim.keymap.set("n", "<leader>cr", function()
-          vim.cmd("!dotnet run")
-        end, vim.tbl_extend('force', opts, { desc = "dotnet run" }))
-        
-        vim.keymap.set("n", "<leader>ct", function()
-          vim.cmd("!dotnet test")
-        end, vim.tbl_extend('force', opts, { desc = "dotnet test" }))
-        
-        vim.keymap.set("n", "<leader>cR", function()
-          vim.cmd("!dotnet restore")
-        end, vim.tbl_extend('force', opts, { desc = "dotnet restore" }))
-        
-        vim.keymap.set("n", "<leader>cc", function()
-          vim.cmd("!dotnet clean")
-        end, vim.tbl_extend('force', opts, { desc = "dotnet clean" }))
-      end,
-    })
+    -- Determine project type
+    local content = vim.fn.readfile(project_file)
+    for _, line in ipairs(content) do
+      if line:match("<OutputType>Exe</OutputType>") then
+        project_type = "console"
+        break
+      elseif line:match("Microsoft%.AspNetCore%.App") then
+        project_type = "web"
+        break
+      elseif line:match("<OutputType>Library</OutputType>") then
+        project_type = "library"
+        break
+      end
+    end
+    
+    if not project_type then
+      project_type = "unknown"
+    end
   else
-    -- REMOVED: No fallback to csharp-ls to avoid conflicts
-    vim.notify("OmniSharp not found. Install via :MasonInstall omnisharp", vim.log.levels.ERROR)
-    return false
+    return nil
   end
   
-  return true
-end
-
--- Get project information helper
-function M.get_project_info()
-  return get_csharp_project_info()
+  return {
+    file = project_file,
+    name = project_name,
+    directory = project_dir,
+    type = project_type,
+    platform = platform_config.platform
+  }
 end
 
 -- Build project helper
 function M.build_project(project_info, callback)
   if not project_info then
-    vim.notify("No C# project found", vim.log.levels.ERROR)
+    project_info = M.get_project_info()
+  end
+  
+  if not project_info then
+    vim.notify(string.format(
+      "[%s] No C# project found",
+      platform_config.platform
+    ), vim.log.levels.ERROR)
     return
   end
   
-  vim.notify("Building C# project: " .. project_info.name, vim.log.levels.INFO)
+  vim.notify(string.format(
+    "[%s] Building C# project: %s (%s)",
+    platform_config.platform,
+    project_info.name,
+    project_info.type
+  ), vim.log.levels.INFO)
   
   local build_cmd = { "dotnet", "build", project_info.file, "--configuration", "Debug" }
   
@@ -226,6 +159,145 @@ function M.build_project(project_info, callback)
   })
 end
 
+-- Run project
+function M.run_project()
+  local project_info = M.get_project_info()
+  
+  if not project_info then
+    vim.notify(string.format(
+      "[%s] No C# project found",
+      platform_config.platform
+    ), vim.log.levels.ERROR)
+    return
+  end
+  
+  vim.notify(string.format(
+    "[%s] Running C# project: %s",
+    platform_config.platform,
+    project_info.name
+  ), vim.log.levels.INFO)
+  
+  local run_cmd = { "dotnet", "run", "--project", project_info.file }
+  
+  vim.fn.jobstart(run_cmd, {
+    cwd = project_info.directory,
+    on_exit = function(_, code)
+      if code == 0 then
+        vim.notify("✅ Execution completed successfully", vim.log.levels.INFO)
+      else
+        vim.notify("❌ Execution failed with exit code: " .. code, vim.log.levels.ERROR)
+      end
+    end,
+    on_stdout = function(_, data)
+      if data then
+        for _, line in ipairs(data) do
+          if line and line ~= "" then
+            print("Run: " .. line)
+          end
+        end
+      end
+    end,
+    on_stderr = function(_, data)
+      if data then
+        for _, line in ipairs(data) do
+          if line and line ~= "" then
+            vim.notify("Run Error: " .. line, vim.log.levels.ERROR)
+          end
+        end
+      end
+    end
+  })
+end
+
+-- Test project
+function M.test_project()
+  local project_info = M.get_project_info()
+  
+  if not project_info then
+    vim.notify(string.format(
+      "[%s] No C# project found",
+      platform_config.platform
+    ), vim.log.levels.ERROR)
+    return
+  end
+  
+  vim.notify(string.format(
+    "[%s] Testing C# project: %s",
+    platform_config.platform,
+    project_info.name
+  ), vim.log.levels.INFO)
+  
+  local test_cmd = { "dotnet", "test", project_info.file }
+  
+  vim.fn.jobstart(test_cmd, {
+    cwd = project_info.directory,
+    on_exit = function(_, code)
+      if code == 0 then
+        vim.notify("✅ All tests passed!", vim.log.levels.INFO)
+      else
+        vim.notify("❌ Tests failed with exit code: " .. code, vim.log.levels.ERROR)
+      end
+    end,
+    on_stdout = function(_, data)
+      if data then
+        for _, line in ipairs(data) do
+          if line and line ~= "" then
+            print("Test: " .. line)
+          end
+        end
+      end
+    end,
+    on_stderr = function(_, data)
+      if data then
+        for _, line in ipairs(data) do
+          if line and line ~= "" then
+            vim.notify("Test Error: " .. line, vim.log.levels.ERROR)
+          end
+        end
+      end
+    end
+  })
+end
+
+-- Check .NET environment
+function M.check_environment()
+  vim.notify(string.format("=== C#/.NET Environment Check [%s] ===", platform_config.platform), vim.log.levels.INFO)
+  
+  -- Check dotnet CLI
+  if vim.fn.executable("dotnet") == 1 then
+    vim.notify("✅ dotnet CLI found", vim.log.levels.INFO)
+    
+    -- Get dotnet version
+    vim.fn.jobstart({ "dotnet", "--version" }, {
+      on_stdout = function(_, data)
+        if data and data[1] then
+          vim.notify("  .NET SDK Version: " .. data[1], vim.log.levels.INFO)
+        end
+      end,
+      on_stderr = function(_, data)
+        if data then
+          for _, line in ipairs(data) do
+            if line and line ~= "" then
+              vim.notify("dotnet Error: " .. line, vim.log.levels.ERROR)
+            end
+          end
+        end
+      end
+    })
+  else
+    vim.notify("❌ dotnet CLI not found", vim.log.levels.ERROR)
+  end
+  
+  -- Check Omnisharp (if applicable)
+  if platform_config.is_omnisharp then
+    local omnisharp_path = platform_config.omnisharp_server_path()
+    if vim.fn.filereadable(omnisharp_path) == 1 then
+      vim.notify("✅ Omnisharp executable found: " .. omnisharp_path, vim.log.levels.INFO)
+    else
+      vim.notify("❌ Omnisharp executable not found at: " .. omnisharp_path, vim.log.levels.ERROR)
+      vim.notify("       Please ensure Omnisharp is installed and configured correctly.", vim.log.levels.WARN)
+    end
+  end
+end
+
 return M
-
-
