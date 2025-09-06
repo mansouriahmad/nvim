@@ -33,18 +33,6 @@ return {
     ft = 'qf',
     config = true,
   },
-
-  -- Markdown preview
-  {
-    'iamcco/markdown-preview.nvim',
-    cmd = { 'MarkdownPreviewToggle', 'MarkdownPreview', 'MarkdownPreviewStop' },
-    ft = { 'markdown' },
-    build = function() vim.fn['mkdp#util#install']() end,
-    keys = {
-      { '<leader>mp', '<cmd>MarkdownPreviewToggle<cr>', desc = 'Markdown Preview' },
-    },
-  },
-
   -- Better fold management
   {
     'kevinhwang91/nvim-ufo',
