@@ -428,11 +428,11 @@ function M.setup_rust_lsp(lspconfig, capabilities)
     return false
   end
 
-  vim.notify(string.format(
-    "[%s] Found rust-analyzer at: %s",
-    M.platform,
-    rust_analyzer
-  ), vim.log.levels.INFO)
+  -- vim.notify(string.format(
+  --   "[%s] Found rust-analyzer at: %s",
+  --   M.platform,
+  --   rust_analyzer
+  -- ), vim.log.levels.INFO)
 
   lspconfig.rust_analyzer.setup({
     capabilities = capabilities,
