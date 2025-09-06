@@ -12,8 +12,8 @@ return {
       local dapui = require("dapui")
       local persistent_breakpoints = require("persistent-breakpoints")
       local debug_rust = require("configs.debug.rust")
-      local debug_python = require("configs.debug.python")
-      local debug_csharp = require("configs.debug.csharp")
+      -- local debug_python = require("configs.debug.python")
+      -- local debug_csharp = require("configs.debug.csharp")
 
       persistent_breakpoints.setup({
         -- You can customize the directory where breakpoints are saved.
@@ -94,39 +94,39 @@ return {
         dapui.close()
         vim.notify("Debug session completed", vim.log.levels.INFO)
       end
-      dap.listeners.before.event_exited.dapui_config = function()
-        dapui.close()
-        vim.notify("Debug session completed", vim.log.levels.INFO)
-      end
+      -- dap.listeners.before.event_exited.dapui_config = function()
+      --   dapui.close()
+      --   vim.notify("Debug session completed", vim.log.levels.INFO)
+      -- end
 
       -- codelldb adapter for Rust
       debug_rust.setup_adapter(dap)
 
       -- Python debugger adapter (debugpy)
-      debug_python.setup_adapter(dap)
+      -- debug_python.setup_adapter(dap)
 
       -- C# debugger adapter (netcoredbg)
-      debug_csharp.setup_adapter(dap)
+      -- debug_csharp.setup_adapter(dap)
 
       -- Function to automatically find Rust executable
       local get_rust_executable = debug_rust.get_rust_executable
 
       -- FIXED: Helper function to get the correct Python path (moved up)
-      local get_python_path = debug_python.get_python_path
+      -- local get_python_path = debug_python.get_python_path
 
       -- Helper function to find C# executable and project info
-      local get_csharp_debug_info = debug_csharp.get_csharp_debug_info
+      -- local get_csharp_debug_info = debug_csharp.get_csharp_debug_info
 
-      local build_csharp_project = debug_csharp.build_csharp_project
+      -- local build_csharp_project = debug_csharp.build_csharp_project
 
       -- C# debugging configurations
-      debug_csharp.setup_configurations(dap, get_csharp_debug_info)
+      -- debug_csharp.setup_configurations(dap, get_csharp_debug_info)
 
       -- Rust debugging configurations
       debug_rust.setup_configurations(dap, get_rust_executable)
 
       -- FIXED: Python debugging configurations (get_python_path now defined above)
-      debug_python.setup_configurations(dap, get_python_path)
+      -- debug_python.setup_configurations(dap, get_python_path)
 
       -- Function to launch debugger based on filetype (for F5)
       local function launch_debugger()
@@ -165,39 +165,39 @@ return {
               end
             end
           })
-        elseif filetype == 'python' then
-          vim.notify('Launching Python debugger...', vim.log.levels.INFO)
-          -- Use the first Python configuration (Launch Python File)
-          dap.run(dap.configurations.python[1])
-        elseif filetype == 'cs' or filetype == 'csharp' then
-          local project_info = get_csharp_debug_info()
-          if not project_info then
-            vim.notify('No C# project found in workspace', vim.log.levels.ERROR)
-            return
-          end
+        -- elseif filetype == 'python' then
+        --   vim.notify('Launching Python debugger...', vim.log.levels.INFO)
+        --   -- Use the first Python configuration (Launch Python File)
+        --   dap.run(dap.configurations.python[1])
+        -- elseif filetype == 'cs' or filetype == 'csharp' then
+        --   local project_info = get_csharp_debug_info()
+        --   if not project_info then
+        --     vim.notify('No C# project found in workspace', vim.log.levels.ERROR)
+        --     return
+        --   end
 
-          vim.notify('Building and launching C# debugger...', vim.log.levels.INFO)
-          build_csharp_project(project_info, function(success)
-            if success then
-              vim.schedule(function()
-                -- Refresh project info to get updated dll path
-                local updated_info = get_csharp_debug_info()
-                if updated_info and updated_info.dll_path and vim.fn.filereadable(updated_info.dll_path) == 1 then
-                  dap.run({
-                    type = "coreclr",
-                    name = "Launch C# Application",
-                    request = "launch",
-                    program = updated_info.dll_path,
-                    cwd = updated_info.project_dir,
-                    console = "integratedTerminal",
-                    args = {},
-                  })
-                else
-                  vim.notify('Built successfully but could not find executable', vim.log.levels.ERROR)
-                end
-              end)
-            end
-          end)
+        --   vim.notify('Building and launching C# debugger...', vim.log.levels.INFO)
+        --   build_csharp_project(project_info, function(success)
+        --     if success then
+        --       vim.schedule(function()
+        --         -- Refresh project info to get updated dll path
+        --         local updated_info = get_csharp_debug_info()
+        --         if updated_info and updated_info.dll_path and vim.fn.filereadable(updated_info.dll_path) == 1 then
+        --           dap.run({
+        --             type = "coreclr",
+        --             name = "Launch C# Application",
+        --             request = "launch",
+        --             program = updated_info.dll_path,
+        --             cwd = updated_info.project_dir,
+        --             console = "integratedTerminal",
+        --             args = {},
+        --           })
+        --         else
+        --           vim.notify('Built successfully but could not find executable', vim.log.levels.ERROR)
+        --         end
+        --       end)
+        --     end
+        --   end)
         else
           vim.notify('No automatic debug configuration for ' .. filetype, vim.log.levels.INFO)
           dap.continue() -- Fallback to continue if not Rust or Python
@@ -243,15 +243,15 @@ return {
       -- Auto-install debuggers when opening relevant files
       vim.api.nvim_create_autocmd("BufReadPost", {
         group = vim.api.nvim_create_augroup("DapSetup", { clear = true }),
-        pattern = { "*.rs", "*.py", "*.cs", "*.csharp" },
+        pattern = { "*.rs" },
         callback = function()
           local filetype = vim.bo.filetype
           if filetype == "rust" then
             debug_rust.check_and_install_debugger()
-          elseif filetype == "python" then
-            debug_python.check_and_install_debugger()
-          elseif filetype == "cs" or filetype == "csharp" then
-            debug_csharp.check_and_install_debugger()
+          -- elseif filetype == "python" then
+          --   debug_python.check_and_install_debugger()
+          -- elseif filetype == "cs" or filetype == "csharp" then
+          --   debug_csharp.check_and_install_debugger()
           end
         end,
       })

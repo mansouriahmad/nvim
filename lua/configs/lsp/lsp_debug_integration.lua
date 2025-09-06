@@ -7,12 +7,8 @@ local M = {}
 local platform_config = require('configs.lsp.platform_config')
 
 -- Import language-specific modules (updated versions)
-local csharp_lsp = require('configs.lsp.csharp')
-local csharp_debug = require('configs.debug.csharp')
 local rust_lsp = require('configs.lsp.rust')
 local rust_debug = require('configs.debug.rust')
-local python_lsp = require('configs.lsp.python')
-local python_debug = require('configs.debug.python')
 
 -- Setup function for LSP servers
 function M.setup_lsp(capabilities)
@@ -24,8 +20,6 @@ function M.setup_lsp(capabilities)
   -- Setup each language LSP
   local results = {
     rust = rust_lsp.setup_lsp(capabilities),
-    python = python_lsp.setup_lsp(capabilities),
-    csharp = csharp_lsp.setup_lsp(capabilities),
   }
 
   -- Report results
@@ -51,8 +45,6 @@ function M.setup_debuggers()
   -- Setup debuggers using platform configuration
   local results = {
     rust = platform_config.setup_rust_debugger(dap),
-    python = platform_config.setup_python_debugger(dap),
-    csharp = platform_config.setup_csharp_debugger(dap),
   }
 
   -- Report results
@@ -65,14 +57,10 @@ function M.setup_debuggers()
   end
 
   -- Setup debug configurations (these use the platform-aware finders internally)
-  csharp_debug.setup_configurations()
   rust_debug.setup_configurations()
-  python_debug.setup_configurations()
 
   -- Setup language-specific keymaps
-  csharp_debug.setup_keymaps()
   rust_debug.setup_keymaps()
-  python_debug.setup_keymaps()
 
   -- Enhanced DAP UI setup
   dapui.setup({
@@ -128,12 +116,6 @@ function M.universal_debug_launcher()
   if filetype == 'rust' then
     vim.notify('🦀 Launching Rust debugger...', vim.log.levels.INFO)
     rust_debug.build_and_debug()
-  elseif filetype == 'python' then
-    vim.notify('🐍 Launching Python debugger...', vim.log.levels.INFO)
-    python_debug.run_and_debug()
-  elseif filetype == 'cs' or filetype == 'csharp' then
-    vim.notify('⚡ Launching C# debugger...', vim.log.levels.INFO)
-    csharp_debug.build_and_debug()
   else
     vim.notify('No automatic debug configuration for ' .. filetype, vim.log.levels.INFO)
     dap.continue()
@@ -189,13 +171,9 @@ function M.setup_global_keymaps()
 
   -- Language-specific debug shortcuts
   vim.keymap.set("n", "<leader>drs", rust_debug.build_and_debug, { desc = "Build & Debug Rust" })
-  vim.keymap.set("n", "<leader>dcs", csharp_debug.build_and_debug, { desc = "Build & Debug C#" })
-  vim.keymap.set("n", "<leader>dpy", python_debug.run_and_debug, { desc = "Run & Debug Python" })
 
   -- Language environment checks
   vim.keymap.set("n", "<leader>lrc", rust_lsp.check_toolchain, { desc = "Check Rust toolchain" })
-  vim.keymap.set("n", "<leader>lpc", python_lsp.check_environment, { desc = "Check Python environment" })
-  vim.keymap.set("n", "<leader>lcc", csharp_lsp.check_environment, { desc = "Check C# environment" })
 end
 
 -- Setup DAP signs for better visual feedback
@@ -252,30 +230,12 @@ function M.setup_autocmds()
     end,
   })
 
-  -- C# file detection and setup
-  vim.api.nvim_create_autocmd({ 'BufNewFile', 'BufRead' }, {
-    group = augroup,
-    pattern = '*.cs',
-    callback = function()
-      csharp_debug.ensure_debugger_installed()
-    end,
-  })
-
   -- Rust file detection and setup
   vim.api.nvim_create_autocmd({ 'BufNewFile', 'BufRead' }, {
     group = augroup,
     pattern = '*.rs',
     callback = function()
       rust_debug.ensure_debugger_installed()
-    end,
-  })
-
-  -- Python file detection and setup
-  vim.api.nvim_create_autocmd({ 'BufNewFile', 'BufRead' }, {
-    group = augroup,
-    pattern = '*.py',
-    callback = function()
-      python_debug.ensure_debugger_installed()
     end,
   })
 
@@ -286,21 +246,9 @@ function M.setup_autocmds()
       local cwd = vim.fn.getcwd()
       local notifications = {}
 
-      -- Check for C# projects
-      if vim.fn.glob('*.csproj', false, true)[1] or vim.fn.glob('*.sln', false, true)[1] then
-        table.insert(notifications, 'C# project detected')
-      end
-
       -- Check for Rust projects
       if vim.fn.filereadable('Cargo.toml') == 1 then
         table.insert(notifications, 'Rust project detected')
-      end
-
-      -- Check for Python projects
-      if vim.fn.filereadable('requirements.txt') == 1 or
-          vim.fn.filereadable('pyproject.toml') == 1 or
-          vim.fn.filereadable('setup.py') == 1 then
-        table.insert(notifications, 'Python project detected')
       end
 
       if #notifications > 0 then

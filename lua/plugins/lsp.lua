@@ -32,8 +32,8 @@ return {
           "yamlls",        -- YAML
           "jsonls",        -- JSON
           "bashls",        -- Shell scripts
-          "pyright",       -- Python LSP
-          "ruff",          -- Python linter/formatter
+          -- "pyright",       -- Python LSP
+          -- "ruff",          -- Python linter/formatter
         },
         automatic_installation = true,
       })
@@ -53,8 +53,8 @@ return {
       local lspconfig = require("lspconfig")
       local configs = require("configs")
       local lsp_rust = require("configs.lsp.rust")
-      local lsp_python = require("configs.lsp.python")
-      local lsp_csharp = require("configs.lsp.csharp")
+      -- local lsp_python = require("configs.lsp.python")
+      -- local lsp_csharp = require("configs.lsp.csharp")
 
       -- nvim-cmp capabilities (FIXED: moved before LSP setups)
       local capabilities = vim.lsp.protocol.make_client_capabilities()
@@ -167,15 +167,13 @@ return {
           lsp_rust.setup_keymaps(client, bufnr, desc_opts)
 
           -- Python-specific keymaps
-          lsp_python.setup_keymaps(client, bufnr, desc_opts)
+          -- lsp_python.setup_keymaps(client, bufnr, desc_opts)
 
           -- Setup language-specific LSP after client attaches
           if client.name == "rust_analyzer" then
             lsp_rust.setup_lsp(capabilities)
-          elseif client.name == "pyright" or client.name == "ruff" then
-            lsp_python.setup_lsp(capabilities)
-          elseif client.name == "omnisharp" or client.name == "csharp_ls" then
-            lsp_csharp.setup_lsp(capabilities)
+          -- elseif client.name == "omnisharp" or client.name == "csharp_ls" then
+          --   lsp_csharp.setup_lsp(capabilities)
           end
 
           -- Telescope integration for LSP
@@ -202,6 +200,9 @@ return {
 
       -- C# Language Server (csharp_ls)
       -- lsp_csharp.setup_lsp(capabilities)
+
+      -- Python Language Server (Pyright) and Linter (Ruff)
+      -- lsp_python.setup_lsp(capabilities)
 
       -- Lua LS for Neovim configuration
       lspconfig.lua_ls.setup({

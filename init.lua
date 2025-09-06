@@ -175,11 +175,8 @@ vim.keymap.set("n", "<leader>?", function()
     "  <F10> - Step over",
     "",
     "🔧 Development:",
-    "  <leader>cb - Build C# project",
-    "  <leader>cr - Run C# project", 
     "  <leader>rb - Build Rust project",
     "  <leader>rr - Run Rust project",
-    "  <leader>pr - Run Python file",
     "",
     "📊 Utilities:",
     "  <leader>pp - Performance report",
@@ -225,9 +222,7 @@ vim.api.nvim_create_user_command("HealthCheck", function()
   -- Check core components
   local checks = {
     { name = "Git", cmd = "git --version", required = true },
-    { name = ".NET CLI", cmd = "dotnet --version", lang = "C#" },
     { name = "Rust", cmd = "rustc --version", lang = "Rust" },
-    { name = "Python", cmd = "python --version", lang = "Python" },
     { name = "Node.js", cmd = "node --version", lang = "JavaScript" },
   }
   

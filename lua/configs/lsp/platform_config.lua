@@ -155,262 +155,262 @@ end
 -- ============================================================================
 -- PYTHON CONFIGURATION BY PLATFORM
 -- ============================================================================
-M.python = {}
+-- M.python = {}
 
 -- Windows Python Configuration
-M.python.windows = {
-  python_paths = {
-    M.build_path(vim.fn.getcwd(), ".venv", "Scripts", "python.exe"),
-    M.build_path(vim.fn.getcwd(), "venv", "Scripts", "python.exe"),
-    M.build_path(vim.fn.getcwd(), "env", "Scripts", "python.exe"),
-    M.build_path(M.paths.home, "AppData", "Local", "Programs", "Python", "Python312", "python.exe"),
-    M.build_path(M.paths.home, "AppData", "Local", "Programs", "Python", "Python311", "python.exe"),
-    "C:\\Python312\\python.exe",
-    "C:\\Python311\\python.exe",
-    "C:\\Python310\\python.exe",
-  },
+-- M.python.windows = {
+--   python_paths = {
+--     M.build_path(vim.fn.getcwd(), ".venv", "Scripts", "python.exe"),
+--     M.build_path(vim.fn.getcwd(), "venv", "Scripts", "python.exe"),
+--     M.build_path(vim.fn.getcwd(), "env", "Scripts", "python.exe"),
+--     M.build_path(M.paths.home, "AppData", "Local", "Programs", "Python", "Python312", "python.exe"),
+--     M.build_path(M.paths.home, "AppData", "Local", "Programs", "Python", "Python311", "python.exe"),
+--     "C:\\Python312\\python.exe",
+--     "C:\\Python311\\python.exe",
+--     "C:\\Python310\\python.exe",
+--   },
 
-  pyright_paths = {
-    M.build_path(M.paths.mason_bin, "pyright-langserver.cmd"),
-    M.build_path(M.paths.mason_bin, "pyright-langserver.exe"),
-    M.build_path(M.paths.mason_packages, "pyright", "node_modules", ".bin", "pyright-langserver.cmd"),
-  },
+--   pyright_paths = {
+--     M.build_path(M.paths.mason_bin, "pyright-langserver.cmd"),
+--     M.build_path(M.paths.mason_bin, "pyright-langserver.exe"),
+--     M.build_path(M.paths.mason_packages, "pyright", "node_modules", ".bin", "pyright-langserver.cmd"),
+--   },
 
-  ruff_paths = {
-    M.build_path(M.paths.mason_bin, "ruff.exe"),
-    M.build_path(M.paths.mason_bin, "ruff-lsp.exe"),
-    M.build_path(M.paths.mason_packages, "ruff", "ruff.exe"),
-  },
+--   ruff_paths = {
+--     M.build_path(M.paths.mason_bin, "ruff.exe"),
+--     M.build_path(M.paths.mason_bin, "ruff-lsp.exe"),
+--     M.build_path(M.paths.mason_packages, "ruff", "ruff.exe"),
+--   },
 
-  debugpy_paths = {
-    M.build_path(M.paths.mason_bin, "debugpy-adapter.exe"),
-    M.build_path(M.paths.mason_packages, "debugpy", "venv", "Scripts", "python.exe"),
-  },
-}
+--   debugpy_paths = {
+--     M.build_path(M.paths.mason_bin, "debugpy-adapter.exe"),
+--     M.build_path(M.paths.mason_packages, "debugpy", "venv", "Scripts", "python.exe"),
+--   },
+-- }
 
 -- macOS Python Configuration
-M.python.macos = {
-  python_paths = {
-    M.build_path(vim.fn.getcwd(), ".venv", "bin", "python3"),
-    M.build_path(vim.fn.getcwd(), ".venv", "bin", "python"),
-    M.build_path(vim.fn.getcwd(), "venv", "bin", "python3"),
-    M.build_path(vim.fn.getcwd(), "venv", "bin", "python"),
-    "/opt/homebrew/bin/python3",
-    "/usr/local/bin/python3",
-    "/usr/bin/python3",
-    M.build_path(M.paths.home, ".pyenv", "shims", "python3"),
-  },
+-- M.python.macos = {
+--   python_paths = {
+--     M.build_path(vim.fn.getcwd(), ".venv", "bin", "python3"),
+--     M.build_path(vim.fn.getcwd(), ".venv", "bin", "python"),
+--     M.build_path(vim.fn.getcwd(), "venv", "bin", "python3"),
+--     M.build_path(vim.fn.getcwd(), "venv", "bin", "python"),
+--     "/opt/homebrew/bin/python3",
+--     "/usr/local/bin/python3",
+--     "/usr/bin/python3",
+--     M.build_path(M.paths.home, ".pyenv", "shims", "python3"),
+--   },
 
-  pyright_paths = {
-    M.build_path(M.paths.mason_bin, "pyright-langserver"),
-    M.build_path(M.paths.mason_packages, "pyright", "node_modules", ".bin", "pyright-langserver"),
-    "/opt/homebrew/bin/pyright-langserver",
-    "/usr/local/bin/pyright-langserver",
-  },
+--   pyright_paths = {
+--     M.build_path(M.paths.mason_bin, "pyright-langserver"),
+--     M.build_path(M.paths.mason_packages, "pyright", "node_modules", ".bin", "pyright-langserver"),
+--     "/opt/homebrew/bin/pyright-langserver",
+--     "/usr/local/bin/pyright-langserver",
+--   },
 
-  ruff_paths = {
-    M.build_path(M.paths.mason_bin, "ruff"),
-    M.build_path(M.paths.mason_bin, "ruff-lsp"),
-    "/opt/homebrew/bin/ruff",
-    "/usr/local/bin/ruff",
-  },
+--   ruff_paths = {
+--     M.build_path(M.paths.mason_bin, "ruff"),
+--     M.build_path(M.paths.mason_bin, "ruff-lsp"),
+--     "/opt/homebrew/bin/ruff",
+--     "/usr/local/bin/ruff",
+--   },
 
-  debugpy_paths = {
-    M.build_path(M.paths.mason_bin, "debugpy-adapter"),
-    M.build_path(M.paths.mason_packages, "debugpy", "venv", "bin", "python"),
-    "/opt/homebrew/bin/debugpy-adapter",
-  },
-}
+--   debugpy_paths = {
+--     M.build_path(M.paths.mason_bin, "debugpy-adapter"),
+--     M.build_path(M.paths.mason_packages, "debugpy", "venv", "bin", "python"),
+--     "/opt/homebrew/bin/debugpy-adapter",
+--   },
+-- }
 
 -- Linux Python Configuration
-M.python.linux = {
-  python_paths = {
-    M.build_path(vim.fn.getcwd(), ".venv", "bin", "python3"),
-    M.build_path(vim.fn.getcwd(), ".venv", "bin", "python"),
-    M.build_path(vim.fn.getcwd(), "venv", "bin", "python3"),
-    M.build_path(vim.fn.getcwd(), "venv", "bin", "python"),
-    "/usr/bin/python3",
-    "/usr/local/bin/python3",
-    M.build_path(M.paths.home, ".local", "bin", "python3"),
-    M.build_path(M.paths.home, ".pyenv", "shims", "python3"),
-  },
+-- M.python.linux = {
+--   python_paths = {
+--     M.build_path(vim.fn.getcwd(), ".venv", "bin", "python3"),
+--     M.build_path(vim.fn.getcwd(), ".venv", "bin", "python"),
+--     M.build_path(vim.fn.getcwd(), "venv", "bin", "python3"),
+--     M.build_path(vim.fn.getcwd(), "venv", "bin", "python"),
+--     "/usr/bin/python3",
+--     "/usr/local/bin/python3",
+--     M.build_path(M.paths.home, ".local", "bin", "python3"),
+--     M.build_path(M.paths.home, ".pyenv", "shims", "python3"),
+--   },
 
-  pyright_paths = {
-    M.build_path(M.paths.mason_bin, "pyright-langserver"),
-    M.build_path(M.paths.mason_packages, "pyright", "node_modules", ".bin", "pyright-langserver"),
-    "/usr/local/bin/pyright-langserver",
-    M.build_path(M.paths.home, ".local", "bin", "pyright-langserver"),
-  },
+--   pyright_paths = {
+--     M.build_path(M.paths.mason_bin, "pyright-langserver"),
+--     M.build_path(M.paths.mason_packages, "pyright", "node_modules", ".bin", "pyright-langserver"),
+--     "/usr/local/bin/pyright-langserver",
+--     M.build_path(M.paths.home, ".local", "bin", "pyright-langserver"),
+--   },
 
-  ruff_paths = {
-    M.build_path(M.paths.mason_bin, "ruff"),
-    M.build_path(M.paths.mason_bin, "ruff-lsp"),
-    "/usr/local/bin/ruff",
-    M.build_path(M.paths.home, ".local", "bin", "ruff"),
-  },
+--   ruff_paths = {
+--     M.build_path(M.paths.mason_bin, "ruff"),
+--     M.build_path(M.paths.mason_bin, "ruff-lsp"),
+--     "/usr/local/bin/ruff",
+--     M.build_path(M.paths.home, ".local", "bin", "ruff"),
+--   },
 
-  debugpy_paths = {
-    M.build_path(M.paths.mason_bin, "debugpy-adapter"),
-    M.build_path(M.paths.mason_packages, "debugpy", "venv", "bin", "python"),
-    M.build_path(M.paths.home, ".local", "bin", "debugpy-adapter"),
-  },
-}
+--   debugpy_paths = {
+--     M.build_path(M.paths.mason_bin, "debugpy-adapter"),
+--     M.build_path(M.paths.mason_packages, "debugpy", "venv", "bin", "python"),
+--     M.build_path(M.paths.home, ".local", "bin", "debugpy-adapter"),
+--   },
+-- }
 
 -- Get Python configuration for current platform
-function M.python.get_config()
-  return M.python[M.platform] or M.python.linux
-end
+-- function M.python.get_config()
+--   return M.python[M.platform] or M.python.linux
+-- end
 
 -- Find Python executable
-function M.python.find_python()
-  local config = M.python.get_config()
+-- function M.python.find_python()
+--   local config = M.python.get_config()
 
-  -- Check virtual environments first
-  for _, path in ipairs(config.python_paths) do
-    if M.executable_exists(path) then
-      return path
-    end
-  end
+--   -- Check virtual environments first
+--   for _, path in ipairs(config.python_paths) do
+--     if M.executable_exists(path) then
+--       return path
+--     end
+--   end
 
-  -- Fall back to system Python
-  local exe_name = M.is_windows and "python.exe" or "python3"
-  return M.find_executable(exe_name, {}) or M.find_executable("python", {})
-end
+--   -- Fall back to system Python
+--   local exe_name = M.is_windows and "python.exe" or "python3"
+--   return M.find_executable(exe_name, {}) or M.find_executable("python", {})
+-- end
 
 -- Find pyright language server
-function M.python.find_pyright()
-  local config = M.python.get_config()
-  local exe_name = M.is_windows and "pyright-langserver.cmd" or "pyright-langserver"
-  return M.find_executable(exe_name, config.pyright_paths)
-end
+-- function M.python.find_pyright()
+--   local config = M.python.get_config()
+--   local exe_name = M.is_windows and "pyright-langserver.cmd" or "pyright-langserver"
+--   return M.find_executable(exe_name, config.pyright_paths)
+-- end
 
 -- Find ruff linter/formatter
-function M.python.find_ruff()
-  local config = M.python.get_config()
-  local exe_name = M.is_windows and "ruff.exe" or "ruff"
-  local ruff = M.find_executable(exe_name, config.ruff_paths)
-  if not ruff then
-    exe_name = M.is_windows and "ruff-lsp.exe" or "ruff-lsp"
-    ruff = M.find_executable(exe_name, config.ruff_paths)
-  end
-  return ruff
-end
+-- function M.python.find_ruff()
+--   local config = M.python.get_config()
+--   local exe_name = M.is_windows and "ruff.exe" or "ruff"
+--   local ruff = M.find_executable(exe_name, config.ruff_paths)
+--   if not ruff then
+--     exe_name = M.is_windows and "ruff-lsp.exe" or "ruff-lsp"
+--     ruff = M.find_executable(exe_name, config.ruff_paths)
+--   end
+--   return ruff
+-- end
 
 -- Find debugpy debugger
-function M.python.find_debugpy()
-  local config = M.python.get_config()
-  local exe_name = M.is_windows and "debugpy-adapter.exe" or "debugpy-adapter"
-  return M.find_executable(exe_name, config.debugpy_paths)
-end
+-- function M.python.find_debugpy()
+--   local config = M.python.get_config()
+--   local exe_name = M.is_windows and "debugpy-adapter.exe" or "debugpy-adapter"
+--   return M.find_executable(exe_name, config.debugpy_paths)
+-- end
 
 -- ============================================================================
 -- C# CONFIGURATION BY PLATFORM
 -- ============================================================================
-M.csharp = {}
+-- M.csharp = {}
 
 -- Windows C# Configuration
-M.csharp.windows = {
-  omnisharp_paths = {
-    M.build_path(M.paths.mason_bin, "omnisharp.exe"),
-    M.build_path(M.paths.mason_packages, "omnisharp", "omnisharp.exe"),
-    "C:\\Program Files\\OmniSharp\\OmniSharp.exe",
-    M.build_path(M.paths.home, ".omnisharp", "OmniSharp.exe"),
-  },
+-- M.csharp.windows = {
+--   omnisharp_paths = {
+--     M.build_path(M.paths.mason_bin, "omnisharp.exe"),
+--     M.build_path(M.paths.mason_packages, "omnisharp", "omnisharp.exe"),
+--     "C:\\Program Files\\OmniSharp\\OmniSharp.exe",
+--     M.build_path(M.paths.home, ".omnisharp", "OmniSharp.exe"),
+--   },
 
-  csharp_ls_paths = {
-    M.build_path(M.paths.mason_bin, "csharp-ls.exe"),
-    M.build_path(M.paths.mason_packages, "csharp-ls", "csharp-ls.exe"),
-  },
+--   csharp_ls_paths = {
+--     M.build_path(M.paths.mason_bin, "csharp-ls.exe"),
+--     M.build_path(M.paths.mason_packages, "csharp-ls", "csharp-ls.exe"),
+--   },
 
-  netcoredbg_paths = {
-    M.build_path(M.paths.mason_packages, "netcoredbg", "netcoredbg", "netcoredbg.exe"),
-    M.build_path(M.paths.mason_bin, "netcoredbg.exe"),
-    "C:\\Program Files\\netcoredbg\\netcoredbg.exe",
-  },
+--   netcoredbg_paths = {
+--     M.build_path(M.paths.mason_packages, "netcoredbg", "netcoredbg", "netcoredbg.exe"),
+--     M.build_path(M.paths.mason_bin, "netcoredbg.exe"),
+--     "C:\\Program Files\\netcoredbg\\netcoredbg.exe",
+--   },
 
-  dotnet_root = os.getenv("DOTNET_ROOT") or "C:\\Program Files\\dotnet",
-}
+--   dotnet_root = os.getenv("DOTNET_ROOT") or "C:\\Program Files\\dotnet",
+-- }
 
 -- macOS C# Configuration
-M.csharp.macos = {
-  omnisharp_paths = {
-    M.build_path(M.paths.mason_bin, "omnisharp"),
-    M.build_path(M.paths.mason_packages, "omnisharp", "omnisharp"),
-    "/opt/homebrew/bin/omnisharp",
-    "/usr/local/bin/omnisharp",
-    M.build_path(M.paths.home, ".omnisharp", "omnisharp"),
-  },
+-- M.csharp.macos = {
+--   omnisharp_paths = {
+--     M.build_path(M.paths.mason_bin, "omnisharp"),
+--     M.build_path(M.paths.mason_packages, "omnisharp", "omnisharp"),
+--     "/opt/homebrew/bin/omnisharp",
+--     "/usr/local/bin/omnisharp",
+--     M.build_path(M.paths.home, ".omnisharp", "omnisharp"),
+--   },
 
-  csharp_ls_paths = {
-    M.build_path(M.paths.mason_bin, "csharp-ls"),
-    M.build_path(M.paths.mason_packages, "csharp-ls", "csharp-ls"),
-    "/opt/homebrew/bin/csharp-ls",
-  },
+--   csharp_ls_paths = {
+--     M.build_path(M.paths.mason_bin, "csharp-ls"),
+--     M.build_path(M.paths.mason_packages, "csharp-ls", "csharp-ls"),
+--     "/opt/homebrew/bin/csharp-ls",
+--   },
 
-  netcoredbg_paths = {
-    M.build_path(M.paths.mason_packages, "netcoredbg", "netcoredbg"),
-    M.build_path(M.paths.mason_bin, "netcoredbg"),
-    "/opt/homebrew/bin/netcoredbg",
-    "/usr/local/bin/netcoredbg",
-  },
+--   netcoredbg_paths = {
+--     M.build_path(M.paths.mason_packages, "netcoredbg", "netcoredbg"),
+--     M.build_path(M.paths.mason_bin, "netcoredbg"),
+--     "/opt/homebrew/bin/netcoredbg",
+--     "/usr/local/bin/netcoredbg",
+--   },
 
-  dotnet_root = os.getenv("DOTNET_ROOT") or "/usr/local/share/dotnet",
-}
+--   dotnet_root = os.getenv("DOTNET_ROOT") or "/usr/local/share/dotnet",
+-- }
 
 -- Linux C# Configuration
-M.csharp.linux = {
-  omnisharp_paths = {
-    M.build_path(M.paths.mason_bin, "omnisharp"),
-    M.build_path(M.paths.mason_packages, "omnisharp", "omnisharp"),
-    "/usr/local/bin/omnisharp",
-    "/usr/bin/omnisharp",
-    M.build_path(M.paths.home, ".local", "bin", "omnisharp"),
-    M.build_path(M.paths.home, ".omnisharp", "omnisharp"),
-  },
+-- M.csharp.linux = {
+--   omnisharp_paths = {
+--     M.build_path(M.paths.mason_bin, "omnisharp"),
+--     M.build_path(M.paths.mason_packages, "omnisharp", "omnisharp"),
+--     "/usr/local/bin/omnisharp",
+--     "/usr/bin/omnisharp",
+--     M.build_path(M.paths.home, ".local", "bin", "omnisharp"),
+--     M.build_path(M.paths.home, ".omnisharp", "omnisharp"),
+--   },
 
-  csharp_ls_paths = {
-    M.build_path(M.paths.mason_bin, "csharp-ls"),
-    M.build_path(M.paths.mason_packages, "csharp-ls", "csharp-ls"),
-    "/usr/local/bin/csharp-ls",
-    M.build_path(M.paths.home, ".local", "bin", "csharp-ls"),
-  },
+--   csharp_ls_paths = {
+--     M.build_path(M.paths.mason_bin, "csharp-ls"),
+--     M.build_path(M.paths.mason_packages, "csharp-ls", "csharp-ls"),
+--     "/usr/local/bin/csharp-ls",
+--     M.build_path(M.paths.home, ".local", "bin", "csharp-ls"),
+--   },
 
-  netcoredbg_paths = {
-    M.build_path(M.paths.mason_packages, "netcoredbg", "netcoredbg"),
-    M.build_path(M.paths.mason_bin, "netcoredbg"),
-    "/usr/local/bin/netcoredbg",
-    "/usr/bin/netcoredbg",
-    M.build_path(M.paths.home, ".local", "bin", "netcoredbg"),
-  },
+--   netcoredbg_paths = {
+--     M.build_path(M.paths.mason_packages, "netcoredbg", "netcoredbg"),
+--     M.build_path(M.paths.mason_bin, "netcoredbg"),
+--     "/usr/local/bin/netcoredbg",
+--     "/usr/bin/netcoredbg",
+--     M.build_path(M.paths.home, ".local", "bin", "netcoredbg"),
+--   },
 
-  dotnet_root = os.getenv("DOTNET_ROOT") or "/usr/share/dotnet",
-}
+--   dotnet_root = os.getenv("DOTNET_ROOT") or "/usr/share/dotnet",
+-- }
 
 -- Get C# configuration for current platform
-function M.csharp.get_config()
-  return M.csharp[M.platform] or M.csharp.linux
-end
+-- function M.csharp.get_config()
+--   return M.csharp[M.platform] or M.csharp.linux
+-- end
 
 -- Find OmniSharp executable
-function M.csharp.find_omnisharp()
-  local config = M.csharp.get_config()
-  local exe_name = M.is_windows and "omnisharp.exe" or "omnisharp"
-  return M.find_executable(exe_name, config.omnisharp_paths)
-end
+-- function M.csharp.find_omnisharp()
+--   local config = M.csharp.get_config()
+--   local exe_name = M.is_windows and "omnisharp.exe" or "omnisharp"
+--   return M.find_executable(exe_name, config.omnisharp_paths)
+-- end
 
 -- Find csharp-ls executable
-function M.csharp.find_csharp_ls()
-  local config = M.csharp.get_config()
-  local exe_name = M.is_windows and "csharp-ls.exe" or "csharp-ls"
-  return M.find_executable(exe_name, config.csharp_ls_paths)
-end
+-- function M.csharp.find_csharp_ls()
+--   local config = M.csharp.get_config()
+--   local exe_name = M.is_windows and "csharp-ls.exe" or "csharp-ls"
+--   return M.find_executable(exe_name, config.csharp_ls_paths)
+-- end
 
 -- Find netcoredbg debugger
-function M.csharp.find_netcoredbg()
-  local config = M.csharp.get_config()
-  local exe_name = M.is_windows and "netcoredbg.exe" or "netcoredbg"
-  return M.find_executable(exe_name, config.netcoredbg_paths)
-end
+-- function M.csharp.find_netcoredbg()
+--   local config = M.csharp.get_config()
+--   local exe_name = M.is_windows and "netcoredbg.exe" or "netcoredbg"
+--   return M.find_executable(exe_name, config.netcoredbg_paths)
+-- end
 
 -- ============================================================================
 -- LSP SETUP FUNCTIONS
@@ -489,148 +489,154 @@ function M.setup_rust_lsp(lspconfig, capabilities)
 end
 
 -- Setup Python LSP
-function M.setup_python_lsp(lspconfig, capabilities)
-  local pyright = M.python.find_pyright()
-  local python = M.python.find_python()
-  local ruff = M.python.find_ruff()
+-- function M.setup_python_lsp(lspconfig, capabilities)
+--   local pyright = M.python.find_pyright()
+--   local python = M.python.find_python()
+--   local ruff = M.python.find_ruff()
 
-  if not python then
-    vim.notify(string.format(
-      "[%s] Python not found. Please install Python 3",
-      M.platform
-    ), vim.log.levels.ERROR)
-    return false
-  end
+--   if not python then
+--     vim.notify(string.format(
+--       "[%s] Python not found. Please install Python 3",
+--       M.platform
+--     ), vim.log.levels.ERROR)
+--     return false
+--   end
 
-  vim.notify(string.format(
-    "[%s] Using Python: %s",
-    M.platform,
-    python
-  ), vim.log.levels.INFO)
+--   vim.notify(string.format(
+--     "[%s] Using Python: %s",
+--     M.platform,
+--     python
+--   ), vim.log.levels.INFO)
 
-  if pyright then
-    vim.notify(string.format(
-      "[%s] Found pyright at: %s",
-      M.platform,
-      pyright
-    ), vim.log.levels.INFO)
+--   if pyright then
+--     vim.notify(string.format(
+--       "[%s] Found pyright at: %s",
+--       M.platform,
+--       pyright
+--     ), vim.log.levels.INFO)
 
-    lspconfig.pyright.setup({
-      capabilities = capabilities,
-      cmd = { pyright, "--stdio" },
-      settings = {
-        python = {
-          pythonPath = python,
-          analysis = {
-            typeCheckingMode = "basic",
-            autoSearchPaths = true,
-            diagnosticMode = "workspace",
-            useLibraryCodeForTypes = true,
-            autoImportCompletions = true,
-          },
-        },
-      },
-    })
-  else
-    vim.notify(string.format(
-      "[%s] pyright not found. Install via: :MasonInstall pyright",
-      M.platform
-    ), vim.log.levels.WARN)
-  end
+--     lspconfig.pyright.setup({
+--       capabilities = capabilities,
+--       cmd = { pyright, "--stdio" },
+--       settings = {
+--         python = {
+--           pythonPath = python,
+--           analysis = {
+--             typeCheckingMode = "basic",
+--             autoSearchPaths = true,
+--             diagnosticMode = "workspace",
+--             useLibraryCodeForTypes = true,
+--             autoImportCompletions = true,
+--           },
+--         },
+--       },
+--     })
+--   else
+--     vim.notify(string.format(
+--       "[%s] pyright not found. Install via: :MasonInstall pyright",
+--       M.platform
+--     ), vim.log.levels.WARN)
+--   end
 
-  if ruff then
-    vim.notify(string.format(
-      "[%s] Found ruff at: %s",
-      M.platform,
-      ruff
-    ), vim.log.levels.INFO)
+--   if ruff then
+--     vim.notify(string.format(
+--       "[%s] Found ruff at: %s",
+--       M.platform,
+--       ruff
+--     ), vim.log.levels.INFO)
 
-    lspconfig.ruff.setup({
-      capabilities = capabilities,
-      cmd = { ruff, "server", "--preview" },
-      init_options = {
-        settings = {
-          args = {
-            "--line-length=88",
-            "--select=E,W,F,I,N,UP,YTT,ANN,S,BLE,FBT,B,A,COM,C4,DTZ,T10,EM,EXE,ISC,ICN,G,INP,PIE,T20,PYI,PT,Q,RSE,RET,SLF,SIM,TID,TCH,INT,ARG,PTH,ERA,PD,PGH,PL,TRY,NPY,RUF",
-            "--ignore=E501,W503,E203",
-          },
-        },
-      },
-    })
-  else
-    vim.notify(string.format(
-      "[%s] ruff not found. Install via: :MasonInstall ruff-lsp",
-      M.platform
-    ), vim.log.levels.WARN)
-  end
+--     lspconfig.ruff.setup({
+--       capabilities = capabilities,
+--       cmd = { ruff, "server", "--preview" },
+--       init_options = {
+--         settings = {
+--           args = {
+--             "--line-length=88",
+--             "--select=E,W,F,I,N,UP,YTT,ANN,S,BLE,FBT,B,A,COM,C4,DTZ,T10,EM,EXE,ISC,ICN,G,INP,PIE,T20,PYI,PT,Q,RSE,RET,SLF,SIM,TID,TCH,INT,ARG,PTH,ERA,PD,PGH,PL,TRY,NPY,RUF",
+--             "--ignore=E501,W503,E203",
+--           },
+--         },
+--       },
+--     })
+--   else
+--     vim.notify(string.format(
+--       "[%s] ruff not found. Install via: :MasonInstall ruff-lsp",
+--       M.platform
+--     ), vim.log.levels.WARN)
+--   end
 
-  return true
-end
+--   return true
+-- end
 
 -- Setup C# LSP
-function M.setup_csharp_lsp(lspconfig, capabilities)
-  local omnisharp = M.csharp.find_omnisharp()
-  local csharp_ls = M.csharp.find_csharp_ls()
+-- function M.setup_csharp_lsp(lspconfig, capabilities)
+--   local omnisharp = M.csharp.find_omnisharp()
+--   local csharp_ls = M.csharp.find_csharp_ls()
 
-  if omnisharp then
-    vim.notify(string.format(
-      "[%s] Found OmniSharp at: %s",
-      M.platform,
-      omnisharp
-    ), vim.log.levels.INFO)
+--   if omnisharp then
+--     vim.notify(string.format(
+--       "[%s] Found OmniSharp at: %s",
+--       M.platform,
+--       omnisharp
+--     ), vim.log.levels.INFO)
 
-    lspconfig.omnisharp.setup({
-      capabilities = capabilities,
-      cmd = {
-        omnisharp,
-        "--languageserver",
-        "--hostPID", tostring(vim.fn.getpid())
-      },
-      root_dir = lspconfig.util.root_pattern("*.sln", "*.csproj", "omnisharp.json"),
-      settings = {
-        FormattingOptions = {
-          EnableEditorConfigSupport = true,
-          OrganizeImports = true,
-        },
-        MsBuild = {
-          LoadProjectsOnDemand = false,
-        },
-        RoslynExtensionsOptions = {
-          EnableAnalyzersSupport = true,
-          EnableImportCompletion = true,
-          AnalyzeOpenDocumentsOnly = false,
-        },
-        Sdk = {
-          IncludePrereleases = true,
-        },
-      },
-    })
-    return true
-  elseif csharp_ls then
-    vim.notify(string.format(
-      "[%s] OmniSharp not found, using csharp-ls at: %s",
-      M.platform,
-      csharp_ls
-    ), vim.log.levels.WARN)
+--     lspconfig.omnisharp.setup({
+--       capabilities = capabilities,
+--       cmd = {
+--         omnisharp,
+--         "--languageserver",
+--         "--hostPID", tostring(vim.fn.getpid())
+--       },
+--       on_init = function(client)
+--         client.notify("workspace/didChangeConfiguration", { settings = client.config.settings })
+--       end,
+--       root_dir = lspconfig.util.root_pattern("*.sln", "*.csproj", "omnisharp.json"),
+--       init_options = {
+--         AutomaticWorkspaceInit = true
+--       },
+--       settings = {
+--         FormattingOptions = {
+--           EnableEditorConfigSupport = true,
+--           OrganizeImports = true,
+--         },
+--         MsBuild = {
+--           LoadProjectsOnDemand = true,
+--         },
+--         RoslynExtensionsOptions = {
+--           EnableAnalyzersSupport = true,
+--           EnableImportCompletion = true,
+--           AnalyzeOpenDocumentsOnly = false,
+--         },
+--         Sdk = {
+--           IncludePrereleases = true,
+--         },
+--       },
+--     })
+--     return true
+--   elseif csharp_ls then
+--     vim.notify(string.format(
+--       "[%s] OmniSharp not found, using csharp-ls at: %s",
+--       M.platform,
+--       csharp_ls
+--     ), vim.log.levels.WARN)
 
-    lspconfig.csharp_ls.setup({
-      capabilities = capabilities,
-      cmd = { csharp_ls },
-      root_dir = lspconfig.util.root_pattern("*.sln", "*.csproj", "omnisharp.json"),
-      init_options = {
-        AutomaticWorkspaceInit = true
-      }
-    })
-    return true
-  else
-    vim.notify(string.format(
-      "[%s] No C# language server found. Install via: :MasonInstall omnisharp",
-      M.platform
-    ), vim.log.levels.ERROR)
-    return false
-  end
-end
+--     lspconfig.csharp_ls.setup({
+--       capabilities = capabilities,
+--       cmd = { csharp_ls },
+--       root_dir = lspconfig.util.root_pattern("*.sln", "*.csproj", "omnisharp.json"),
+--       init_options = {
+--         AutomaticWorkspaceInit = true
+--       }
+--     })
+--     return true
+--   else
+--     vim.notify(string.format(
+--       "[%s] No C# language server found. Install via: :MasonInstall omnisharp",
+--       M.platform
+--     ), vim.log.levels.ERROR)
+--     return false
+--   end
+-- end
 
 -- ============================================================================
 -- DEBUGGER SETUP FUNCTIONS
@@ -667,70 +673,70 @@ function M.setup_rust_debugger(dap)
 end
 
 -- Setup Python debugger
-function M.setup_python_debugger(dap)
-  local debugpy = M.python.find_debugpy()
+-- function M.setup_python_debugger(dap)
+--   local debugpy = M.python.find_debugpy()
 
-  if not debugpy then
-    vim.notify(string.format(
-      "[%s] debugpy not found. Install via: :MasonInstall debugpy",
-      M.platform
-    ), vim.log.levels.WARN)
-    return false
-  end
+--   if not debugpy then
+--     vim.notify(string.format(
+--       "[%s] debugpy not found. Install via: :MasonInstall debugpy",
+--       M.platform
+--     ), vim.log.levels.WARN)
+--     return false
+--   end
 
-  vim.notify(string.format(
-    "[%s] Found debugpy at: %s",
-    M.platform,
-    debugpy
-  ), vim.log.levels.INFO)
+--   vim.notify(string.format(
+--     "[%s] Found debugpy at: %s",
+--     M.platform,
+--     debugpy
+--   ), vim.log.levels.INFO)
 
-  require("dap-python").setup(M.python.find_python())
+--   require("dap-python").setup(M.python.find_python())
 
-  return true
-end
+--   return true
+-- end
 
 -- Setup C# debugger
-function M.setup_csharp_debugger(dap)
-  local netcoredbg = M.csharp.find_netcoredbg()
-  local codelldb = M.rust.find_codelldb() -- Can also use codelldb for C#
+-- function M.setup_csharp_debugger(dap)
+--   local netcoredbg = M.csharp.find_netcoredbg()
+--   local codelldb = M.rust.find_codelldb() -- Can also use codelldb for C#
 
-  if netcoredbg then
-    vim.notify(string.format(
-      "[%s] Found netcoredbg at: %s",
-      M.platform,
-      netcoredbg
-    ), vim.log.levels.INFO)
+--   if netcoredbg then
+--     vim.notify(string.format(
+--       "[%s] Found netcoredbg at: %s",
+--       M.platform,
+--       netcoredbg
+--     ), vim.log.levels.INFO)
 
-    dap.adapters.coreclr = {
-      type = "executable",
-      command = netcoredbg,
-      args = { "--interpreter=vscode" },
-    }
-    return true
-  elseif codelldb then
-    vim.notify(string.format(
-      "[%s] netcoredbg not found, using codelldb at: %s",
-      M.platform,
-      codelldb
-    ), vim.log.levels.WARN)
+--     dap.adapters.coreclr = {
+--       type = "executable",
+--       command = netcoredbg,
+--       args = { "--interpreter=vscode" },
+--     }
+--     return true
+--   elseif codelldb then
+--     vim.notify(string.format(
+--       "[%s] netcoredbg not found, using codelldb at: %s",
+--       M.platform,
+--       codelldb
+--     ), vim.log.levels.WARN)
 
-    dap.adapters.coreclr = {
-      type = "server",
-      port = "${port}",
-      executable = {
-        command = codelldb,
-        args = { "--port", "${port}" },
-      },
-    }
-    return true
-  else
-    vim.notify(string.format(
-      "[%s] No C# debugger found. Install via: :MasonInstall netcoredbg",
-      M.platform
-    ), vim.log.levels.ERROR)
-    return false
-  end
-end
+--     dap.adapters.coreclr = {
+--       type = "server",
+--       port = "${port}",
+--       executable = {
+--         command = codelldb,
+--         args = { "--port", "${port}" },
+--       },
+--     }
+--     return true
+--   else
+--     vim.notify(string.format(
+--       "[%s] No C# debugger found. Install via: :MasonInstall netcoredbg",
+--       M.platform
+--     ), vim.log.levels.ERROR)
+--     return false
+--   end
+-- end
 
 -- ============================================================================
 -- DIAGNOSTIC FUNCTIONS
@@ -750,31 +756,31 @@ function M.check_installations()
     codelldb and vim.log.levels.INFO or vim.log.levels.ERROR)
 
   -- Check Python
-  vim.notify("--- Python ---", vim.log.levels.INFO)
-  local python = M.python.find_python()
-  local pyright = M.python.find_pyright()
-  local ruff = M.python.find_ruff()
-  local debugpy = M.python.find_debugpy()
-  vim.notify(string.format("python: %s", python or "NOT FOUND"),
-    python and vim.log.levels.INFO or vim.log.levels.ERROR)
-  vim.notify(string.format("pyright: %s", pyright or "NOT FOUND"),
-    pyright and vim.log.levels.INFO or vim.log.levels.WARN)
-  vim.notify(string.format("ruff: %s", ruff or "NOT FOUND"),
-    ruff and vim.log.levels.INFO or vim.log.levels.WARN)
-  vim.notify(string.format("debugpy: %s", debugpy or "NOT FOUND"),
-    debugpy and vim.log.levels.INFO or vim.log.levels.WARN)
+  -- vim.notify("--- Python ---", vim.log.levels.INFO)
+  -- local python = M.python.find_python()
+  -- local pyright = M.python.find_pyright()
+  -- local ruff = M.python.find_ruff()
+  -- local debugpy = M.python.find_debugpy()
+  -- vim.notify(string.format("python: %s", python or "NOT FOUND"),
+  --   python and vim.log.levels.INFO or vim.log.levels.ERROR)
+  -- vim.notify(string.format("pyright: %s", pyright or "NOT FOUND"),
+  --   pyright and vim.log.levels.INFO or vim.log.levels.WARN)
+  -- vim.notify(string.format("ruff: %s", ruff or "NOT FOUND"),
+  --   ruff and vim.log.levels.INFO or vim.log.levels.WARN)
+  -- vim.notify(string.format("debugpy: %s", debugpy or "NOT FOUND"),
+  --   debugpy and vim.log.levels.INFO or vim.log.levels.WARN)
 
   -- Check C#
-  vim.notify("--- C# ---", vim.log.levels.INFO)
-  local omnisharp = M.csharp.find_omnisharp()
-  local csharp_ls = M.csharp.find_csharp_ls()
-  local netcoredbg = M.csharp.find_netcoredbg()
-  vim.notify(string.format("omnisharp: %s", omnisharp or "NOT FOUND"),
-    omnisharp and vim.log.levels.INFO or vim.log.levels.WARN)
-  vim.notify(string.format("csharp-ls: %s", csharp_ls or "NOT FOUND"),
-    csharp_ls and vim.log.levels.INFO or vim.log.levels.WARN)
-  vim.notify(string.format("netcoredbg: %s", netcoredbg or "NOT FOUND"),
-    netcoredbg and vim.log.levels.INFO or vim.log.levels.WARN)
+  -- vim.notify("--- C# ---", vim.log.levels.INFO)
+  -- local omnisharp = M.csharp.find_omnisharp()
+  -- local csharp_ls = M.csharp.find_csharp_ls()
+  -- local netcoredbg = M.csharp.find_netcoredbg()
+  -- vim.notify(string.format("omnisharp: %s", omnisharp or "NOT FOUND"),
+  --   omnisharp and vim.log.levels.INFO or vim.log.levels.WARN)
+  -- vim.notify(string.format("csharp-ls: %s", csharp_ls or "NOT FOUND"),
+  --   csharp_ls and vim.log.levels.INFO or vim.log.levels.WARN)
+  -- vim.notify(string.format("netcoredbg: %s", netcoredbg or "NOT FOUND"),
+  --   netcoredbg and vim.log.levels.INFO or vim.log.levels.WARN)
 end
 
 -- Install missing tools via Mason
@@ -788,21 +794,21 @@ function M.install_missing_tools()
   if not M.rust.find_codelldb() then
     table.insert(tools_to_install, "codelldb")
   end
-  if not M.python.find_pyright() then
-    table.insert(tools_to_install, "pyright")
-  end
-  if not M.python.find_ruff() then
-    table.insert(tools_to_install, "ruff-lsp")
-  end
-  if not M.python.find_debugpy() then
-    table.insert(tools_to_install, "debugpy")
-  end
-  if not M.csharp.find_omnisharp() then
-    table.insert(tools_to_install, "omnisharp")
-  end
-  if not M.csharp.find_netcoredbg() then
-    table.insert(tools_to_install, "netcoredbg")
-  end
+  -- if not M.python.find_pyright() then
+  --   table.insert(tools_to_install, "pyright")
+  -- end
+  -- if not M.python.find_ruff() then
+  --   table.insert(tools_to_install, "ruff-lsp")
+  -- end
+  -- if not M.python.find_debugpy() then
+  --   table.insert(tools_to_install, "debugpy")
+  -- end
+  -- if not M.csharp.find_omnisharp() then
+  --   table.insert(tools_to_install, "omnisharp")
+  -- end
+  -- if not M.csharp.find_netcoredbg() then
+  --   table.insert(tools_to_install, "netcoredbg")
+  -- end
 
   if #tools_to_install > 0 then
     vim.notify(string.format(
