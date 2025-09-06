@@ -169,6 +169,15 @@ return {
           -- Python-specific keymaps
           lsp_python.setup_keymaps(client, bufnr, desc_opts)
 
+          -- Setup language-specific LSP after client attaches
+          if client.name == "rust_analyzer" then
+            lsp_rust.setup_lsp(capabilities)
+          elseif client.name == "pyright" or client.name == "ruff" then
+            lsp_python.setup_lsp(capabilities)
+          elseif client.name == "omnisharp" or client.name == "csharp_ls" then
+            lsp_csharp.setup_lsp(capabilities)
+          end
+
           -- Telescope integration for LSP
           local telescope_builtin = require("telescope.builtin")
           vim.keymap.set("n", "<leader>lr", telescope_builtin.lsp_references, desc_opts("Find references"))
@@ -183,16 +192,16 @@ return {
       })
 
       -- Rust Analyzer configuration
-      lsp_rust.setup_lsp(capabilities)
+      -- lsp_rust.setup_lsp(capabilities)
 
       -- Python Language Server (Pyright)
-      lsp_python.setup_lsp(capabilities)
+      -- lsp_python.setup_lsp(capabilities)
 
       -- Python Linter/Formatter (Ruff) - super fast Python tooling
       -- lsp_python.setup_ruff(lspconfig, capabilities)
 
       -- C# Language Server (csharp_ls)
-      lsp_csharp.setup_lsp(capabilities)
+      -- lsp_csharp.setup_lsp(capabilities)
 
       -- Lua LS for Neovim configuration
       lspconfig.lua_ls.setup({
