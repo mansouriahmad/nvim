@@ -19,6 +19,7 @@ local plugins = {
   require('plugins.lualine'),
   require('plugins.nvim-autopairs'),
   require('plugins.others'),
+  require('plugins.lazygit')
 }
 
 local opts = {

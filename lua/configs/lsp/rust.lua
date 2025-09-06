@@ -145,6 +145,27 @@ return {
   -- Rust-specific keymaps to be called in LspAttach
   setup_keymaps = function(client, bufnr, desc_opts)
     if client.name == "rust_analyzer" then
+      local function print_var_under_cursor()
+        local current_bufnr = vim.api.nvim_get_current_buf()
+        local cursor_pos = vim.api.nvim_win_get_cursor(0)
+        local line = cursor_pos[1]
+        local col = cursor_pos[2]
+
+        -- Get the word under the cursor
+        local word = vim.fn.expand('<cword>')
+
+        if vim.bo[current_bufnr].filetype == 'rust' and word ~= '' then
+          -- Insert the println! macro on the next line
+          local print_statement = string.format('println!(\"%s = {:?}\", %s);', word, word)
+          vim.api.nvim_buf_set_lines(current_bufnr, line, line, false, {print_statement})
+          vim.api.nvim_win_set_cursor(0, {line + 1, 0}) -- Move cursor to the new line
+          vim.cmd('normal ==') -- Fix indentation
+        else
+          vim.notify('Not a Rust file or no variable under cursor.', vim.log.levels.WARN)
+        end
+      end
+
+      vim.keymap.set("n", "<leader>P", print_var_under_cursor, desc_opts("Print variable under cursor (Rust)"))
       vim.keymap.set("n", "<leader>rc", function()
         vim.cmd("!cargo check")
       end, desc_opts("Cargo check"))
