@@ -172,6 +172,15 @@ return {
           -- Setup language-specific LSP after client attaches
           if client.name == "rust_analyzer" then
             lsp_rust.setup_lsp(capabilities)
+            -- Proactively trigger diagnostics on attach without needing to edit/save
+            vim.defer_fn(function()
+              if not vim.api.nvim_buf_is_loaded(bufnr) then return end
+              local supports_save = client.supports_method and client.supports_method('textDocument/didSave')
+              if supports_save then
+                local params = vim.lsp.util.make_text_document_params(bufnr)
+                client.notify('textDocument/didSave', { textDocument = params })
+              end
+            end, 200)
           -- elseif client.name == "omnisharp" or client.name == "csharp_ls" then
           --   lsp_csharp.setup_lsp(capabilities)
           end

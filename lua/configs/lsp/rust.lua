@@ -21,6 +21,22 @@ function M.setup_lsp(capabilities)
         vim.opt_local.shiftwidth = 4
         vim.opt_local.tabstop = 4
         vim.opt_local.expandtab = true
+
+        -- Proactively trigger diagnostics without needing to edit/save
+        -- Simulate a save notification so rust-analyzer runs checkOnSave
+        vim.defer_fn(function()
+          local bufnr = vim.api.nvim_get_current_buf()
+          for _, client in pairs(vim.lsp.get_clients({ bufnr = bufnr })) do
+            if client.name == 'rust_analyzer' then
+              local supports_save = client.supports_method and client.supports_method('textDocument/didSave')
+              if supports_save then
+                local params = vim.lsp.util.make_text_document_params(bufnr)
+                client.notify('textDocument/didSave', { textDocument = params })
+              end
+              break
+            end
+          end
+        end, 250)
       end,
     })
   end
