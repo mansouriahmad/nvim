@@ -63,6 +63,15 @@ return {
       capabilities.textDocument.completion.completionItem.snippetSupport = true
 
       -- Diagnostic configuration
+      -- Define signs explicitly for broader Neovim compatibility
+      do
+        local signs = { Error = " ", Warn = " ", Hint = "󰠠 ", Info = " " }
+        for type, icon in pairs(signs) do
+          local hl = "DiagnosticSign" .. type
+          vim.fn.sign_define(hl, { text = icon, texthl = hl, numhl = "" })
+        end
+      end
+
       vim.diagnostic.config({
         virtual_text = {
           prefix = "●",
@@ -79,10 +88,10 @@ return {
           -- Configuration for the signs displayed in the sign column
           -- See :help vim.diagnostic.config for more details
           text = {
-            [vim.diagnostic.severity.ERROR] = "  ", -- Error sign
-            [vim.diagnostic.severity.WARN] = "  ",  -- Warning sign
+            [vim.diagnostic.severity.ERROR] = " ", -- Error sign
+            [vim.diagnostic.severity.WARN] = " ",  -- Warning sign
             [vim.diagnostic.severity.HINT] = "󰠠 ",  -- Hint sign
-            [vim.diagnostic.severity.INFO] = "  ",  -- Info sign
+            [vim.diagnostic.severity.INFO] = " ",  -- Info sign
           },
           -- Customize the highlight groups for diagnostic signs
           -- Example: highlight groups for Dap signs (if you move them here)
@@ -166,24 +175,37 @@ return {
           -- Rust-specific keymaps
           lsp_rust.setup_keymaps(client, bufnr, desc_opts)
 
+          -- De-duplicate rust-analyzer clients (keep the one with settings/Mason path)
+          if client and client.name == "rust_analyzer" then
+            local function is_preferred(c)
+              local cmd0 = (c.config and c.config.cmd and c.config.cmd[1]) or ""
+              local has_settings = c.config and c.config.settings and c.config.settings["rust-analyzer"] ~= nil
+              return has_settings or (type(cmd0) == "string" and cmd0:find("mason", 1, true) ~= nil)
+            end
+
+            local ras = vim.lsp.get_active_clients({ name = "rust_analyzer" })
+            if #ras > 1 then
+              local preferred = nil
+              for _, c in ipairs(ras) do
+                if is_preferred(c) then
+                  preferred = c
+                  break
+                end
+              end
+              preferred = preferred or client
+              for _, c in ipairs(ras) do
+                if c.id ~= preferred.id then
+                  -- Stop extra rust-analyzer to avoid duplicate diagnostics
+                  pcall(function()
+                    c.stop(true)
+                  end)
+                end
+              end
+            end
+          end
+
           -- Python-specific keymaps
           -- lsp_python.setup_keymaps(client, bufnr, desc_opts)
-
-          -- Setup language-specific LSP after client attaches
-          if client.name == "rust_analyzer" then
-            lsp_rust.setup_lsp(capabilities)
-            -- Proactively trigger diagnostics on attach without needing to edit/save
-            vim.defer_fn(function()
-              if not vim.api.nvim_buf_is_loaded(bufnr) then return end
-              local supports_save = client.supports_method and client.supports_method('textDocument/didSave')
-              if supports_save then
-                local params = vim.lsp.util.make_text_document_params(bufnr)
-                client.notify('textDocument/didSave', { textDocument = params })
-              end
-            end, 200)
-          -- elseif client.name == "omnisharp" or client.name == "csharp_ls" then
-          --   lsp_csharp.setup_lsp(capabilities)
-          end
 
           -- Telescope integration for LSP
           local telescope_builtin = require("telescope.builtin")
@@ -199,7 +221,7 @@ return {
       })
 
       -- Rust Analyzer configuration
-      -- lsp_rust.setup_lsp(capabilities)
+      lsp_rust.setup_lsp(capabilities)
 
       -- Python Language Server (Pyright)
       -- lsp_python.setup_lsp(capabilities)

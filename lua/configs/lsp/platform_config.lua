@@ -444,11 +444,12 @@ function M.setup_rust_lsp(lspconfig, capabilities)
           loadOutDirsFromCheck = true,
           runBuildScripts = true,
         },
-        checkOnSave = {
-          allFeatures = true,
+        -- Prefer new 'check' key to run clippy (avoid duplicate diagnostics)
+        check = {
           command = "clippy",
-          extraArgs = { "--no-deps" },
+          allTargets = true,
         },
+        -- Do not set checkOnSave simultaneously; older rust-analyzer will ignore 'check'
         procMacro = {
           enable = true,
           ignored = {
